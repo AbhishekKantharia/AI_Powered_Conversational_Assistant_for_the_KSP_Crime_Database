@@ -6,7 +6,8 @@
       "auth-function",
       "ai-function",
       "report-function",
-      "cron-function"
+      "cron-function",
+      "api-function"
     ]
   },
   "client": {

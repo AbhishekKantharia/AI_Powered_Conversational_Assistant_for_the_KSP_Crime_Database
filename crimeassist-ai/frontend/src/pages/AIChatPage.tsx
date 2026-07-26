@@ -84,14 +84,12 @@ export default function AIChatPage() {
       }
       setMessages((prev) => [...prev, aiMsg])
     } catch (err) {
-      // Intelligent fallback demo answer if backend service is offline
-      const mockAnswer = generateMockAIAnswer(queryText)
+      const errorMsg = 'Sorry, I could not process your request. The backend service may be temporarily unavailable. Please try again later.'
       const aiMsg: Message = {
         id: `msg-${Date.now() + 1}`,
         role: 'assistant',
-        content: mockAnswer,
+        content: errorMsg,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sources: [{ source: 'IPC Section Database', sourceId: 'IPC-420', similarity: 0.94 }],
       }
       setMessages((prev) => [...prev, aiMsg])
     } finally {

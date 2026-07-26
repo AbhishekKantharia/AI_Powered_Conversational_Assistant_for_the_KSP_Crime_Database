@@ -25,29 +25,7 @@ export default function LoginPage() {
       login(user, accessToken, refreshToken)
       navigate('/dashboard')
     } catch (err: any) {
-      // Mock fallback login for instant demonstration if backend is not live
-      if (username && password) {
-        const mockUser = {
-          id: 'user-01',
-          username: username,
-          email: `${username}@ksp.gov.in`,
-          fullName: 'Inspector Rajesh Kumar',
-          role: 'investigation_officer' as const,
-          status: 'active' as const,
-          badgeNumber: 'KSP-8821',
-          rank: 'Senior Inspector',
-          stationId: 'st-01',
-          stationName: 'Central Silk Board Police Station',
-          districtId: 'dist-01',
-          districtName: 'Bengaluru Urban',
-          twoFactorEnabled: false,
-          createdAt: new Date().toISOString(),
-        }
-        login(mockUser, 'mock_access_token', 'mock_refresh_token')
-        navigate('/dashboard')
-        return
-      }
-      setError(err.response?.data?.error?.message || 'Invalid badge number or password.')
+      setError(err.response?.data?.error?.message || 'Unable to connect to server. Please try again.')
     } finally {
       setLoading(false)
     }
