@@ -30,12 +30,11 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = req.headers['x-auth-token'] as string
+    if (!token) {
       throw new AppError('Access token required', 401, 'UNAUTHORIZED')
     }
 
-    const token = authHeader.substring(7)
     const secret = process.env.JWT_ACCESS_SECRET
     if (!secret) throw new Error('JWT secret not configured')
 
@@ -77,13 +76,12 @@ export const optionalAuthenticate = async (
   _res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const authHeader = req.headers.authorization
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = req.headers['x-auth-token'] as string
+  if (!token) {
     return next()
   }
 
   try {
-    const token = authHeader.substring(7)
     const secret = process.env.JWT_ACCESS_SECRET!
     req.user = jwt.verify(token, secret) as JwtPayload
   } catch {

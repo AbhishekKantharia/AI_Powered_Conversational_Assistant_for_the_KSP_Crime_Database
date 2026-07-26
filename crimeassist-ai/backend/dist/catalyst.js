@@ -26,7 +26,7 @@ app.use((0, cors_1.default)({
     origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token', 'X-Request-ID'],
 }));
 app.use((0, compression_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));
