@@ -8,8 +8,8 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const login = useAuthStore((s) => s.login)
 
-  const [username, setUsername] = useState('officer_ksp')
-  const [password, setPassword] = useState('password123')
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('password')
   const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
