@@ -12,11 +12,10 @@ const database_service_1 = require("../services/database.service");
 const error_middleware_1 = require("./error.middleware");
 const authenticate = async (req, _res, next) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const token = req.headers['x-auth-token'];
+        if (!token) {
             throw new error_middleware_1.AppError('Access token required', 401, 'UNAUTHORIZED');
         }
-        const token = authHeader.substring(7);
         const secret = process.env.JWT_ACCESS_SECRET;
         if (!secret)
             throw new Error('JWT secret not configured');
@@ -49,12 +48,11 @@ const authenticate = async (req, _res, next) => {
 exports.authenticate = authenticate;
 // Optional auth — doesn't throw if no token
 const optionalAuthenticate = async (req, _res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = req.headers['x-auth-token'];
+    if (!token) {
         return next();
     }
     try {
-        const token = authHeader.substring(7);
         const secret = process.env.JWT_ACCESS_SECRET;
         req.user = jsonwebtoken_1.default.verify(token, secret);
     }
