@@ -287,7 +287,7 @@ export async function summarizeCase(caseId: string): Promise<string> {
     District: ${c.district}
     Station: ${c.station}
     Description: ${c.description}
-    IPC Sections: ${(c.ipc_sections || []).join(', ')}
+    IPC Sections: ${(c.ipc_sections as string[] || []).join(', ')}
     Suspects: ${suspects.rows.length} (${suspects.rows.map((s) => (s as { full_name: string }).full_name).join(', ')})
     Victims: ${victims.rows.length}
     Recent Notes: ${notes.rows.map((n) => { const nn = n as { note_type: string; content: string }; return `[${nn.note_type}] ${nn.content}` }).join('\n')}

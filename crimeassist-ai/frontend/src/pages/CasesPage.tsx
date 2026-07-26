@@ -77,35 +77,35 @@ export default function CasesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {cases.map((c: Record<string, unknown>) => (
+          {cases.map((c: Case) => (
             <div
-              key={c.id as string}
+              key={c.id}
               className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-4"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{c.case_number as string}</span>
-                  <h2 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{c.title as string}</h2>
+                  <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{c.caseNumber}</span>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{c.title}</h2>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusColor(c.status as string)}`}>
-                  {(c.status as string)?.replace(/_/g, ' ')}
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusColor(c.status)}`}>
+                  {c.status?.replace(/_/g, ' ')}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <span>Category: <strong className="capitalize">{(c.crime_category as string)?.replace(/_/g, ' ')}</strong></span>
-                <span>Priority: <strong>{c.priority as number}</strong></span>
+                <span>Category: <strong className="capitalize">{c.crimeCategory?.replace(/_/g, ' ')}</strong></span>
+                <span>Priority: <strong>{c.priority}</strong></span>
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center space-x-2">
                   <ShieldAlert className="w-4 h-4 text-rose-500" />
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    AI Risk Score: <span className="text-rose-500">{c.ai_risk_score as number ?? 0}/100</span>
+                    AI Risk Score: <span className="text-rose-500">{c.aiRiskScore ?? 0}/100</span>
                   </span>
                 </div>
                 <Link
-                  to={`/cases/${c.id as string}`}
+                  to={`/cases/${c.id}`}
                   className="text-xs font-bold text-blue-600 hover:text-blue-500 flex items-center space-x-1"
                 >
                   <span>View Details</span>

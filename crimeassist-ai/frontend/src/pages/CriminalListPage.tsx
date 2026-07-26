@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Search, AlertTriangle, Plus, Eye } from 'lucide-react'
 import { useCriminalList } from '../hooks/useAPI'
 import { getRiskBadgeClass, formatCurrency } from '../lib/utils'
+import type { Criminal } from '../types'
 
 export default function CriminalListPage() {
   const [search, setSearch] = useState('')
@@ -74,21 +75,21 @@ export default function CriminalListPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {criminals.map((cr: Record<string, unknown>) => {
-            const riskLevel = cr.risk_level as string
-            const isWanted = cr.is_wanted as boolean
-            const aliases = (cr.aliases as string[]) ?? []
-            const specs = (cr.crime_specialization as string[]) ?? []
+          {criminals.map((cr: Criminal) => {
+            const riskLevel = cr.riskLevel
+            const isWanted = cr.isWanted
+            const aliases = cr.aliases ?? []
+            const specs = cr.crimeSpecialization ?? []
 
             return (
               <div
-                key={cr.id as string}
+                key={cr.id}
                 className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col"
               >
                 <div className="p-5 space-y-4 flex-1">
                   <div className="flex justify-between items-start">
                     <div className="w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-500 text-lg">
-                      {(cr.full_name as string)?.charAt(0)}
+                      {cr.fullName?.charAt(0)}
                     </div>
                     {isWanted && (
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 uppercase tracking-wider flex items-center">
@@ -98,13 +99,13 @@ export default function CriminalListPage() {
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{cr.criminal_id as string}</span>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{cr.full_name as string}</h3>
+                    <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{cr.criminalId}</span>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{cr.fullName}</h3>
                     <p className="text-[11px] text-slate-500">
-                      Age: {cr.age as number ?? 'N/A'} &bull; Cases: {cr.total_cases as number ?? 0}
+                      Age: {cr.age ?? 'N/A'} &bull; Cases: {cr.totalCases ?? 0}
                     </p>
-                    {cr.reward_amount && (
-                      <p className="text-[11px] text-amber-600 font-semibold">Reward: {formatCurrency(cr.reward_amount as number)}</p>
+                    {cr.rewardAmount && (
+                      <p className="text-[11px] text-amber-600 font-semibold">Reward: {formatCurrency(cr.rewardAmount)}</p>
                     )}
                   </div>
 
@@ -124,10 +125,10 @@ export default function CriminalListPage() {
 
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <span className={`text-xs font-bold capitalize ${getRiskBadgeClass(riskLevel)}`}>
-                    Risk: {riskLevel} ({cr.risk_score as number}/100)
+                    Risk: {riskLevel} ({cr.riskScore}/100)
                   </span>
                   <Link
-                    to={`/criminals/${cr.id as string}`}
+                    to={`/criminals/${cr.id}`}
                     className="text-xs font-bold text-blue-600 hover:text-blue-500 flex items-center space-x-1"
                   >
                     <span>Profile</span>

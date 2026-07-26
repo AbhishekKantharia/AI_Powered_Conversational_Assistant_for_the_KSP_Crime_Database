@@ -52,7 +52,7 @@ export async function seedDatabase() {
          RETURNING id`,
         [d.name, d.code, d.lat, d.lng]
       )
-      districtIds.push(res.rows[0].id)
+      districtIds.push(res.rows[0].id as string)
     }
     logger.info(`Seeded ${districtIds.length} Districts`)
 
@@ -67,7 +67,7 @@ export async function seedDatabase() {
          RETURNING id`,
         [STATIONS[i], `PS-${100 + i}`, distId, `080-2294${2000 + i}`]
       )
-      stationIds.push(res.rows[0].id)
+      stationIds.push(res.rows[0].id as string)
     }
     logger.info(`Seeded ${stationIds.length} Police Stations`)
 
