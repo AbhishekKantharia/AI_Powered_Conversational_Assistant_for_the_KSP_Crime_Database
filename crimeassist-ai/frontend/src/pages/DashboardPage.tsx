@@ -297,7 +297,7 @@ export default function DashboardPage() {
                 return (
                   <div key={idx}>
                     <div className="flex justify-between text-[10px] mb-1">
-                      <span className="font-medium text-slate-600 dark:text-slate-400 capitalize">{cat.crime_category.replace(/_/g, ' ')}</span>
+                      <span className="font-medium text-slate-600 dark:text-slate-400 capitalize">{cat.crimeCategory.replace(/_/g, ' ')}</span>
                       <span className="font-bold text-slate-900 dark:text-white">{cat.count}</span>
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">

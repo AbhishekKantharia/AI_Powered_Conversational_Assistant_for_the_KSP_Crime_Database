@@ -182,7 +182,7 @@ router.post('/', requirePermission('cases:create'), validate(CreateCaseSchema), 
   const newCase = result.rows[0]
 
   // Generate AI summary asynchronously
-  aiService.generateCaseSummary(newCase.id).catch((err) => {
+  aiService.generateCaseSummary(newCase.id as string).catch((err) => {
     console.error('Failed to generate AI summary:', err)
   })
 
@@ -190,7 +190,7 @@ router.post('/', requirePermission('cases:create'), validate(CreateCaseSchema), 
     userId: req.user!.userId,
     action: 'CREATE_CASE',
     resourceType: 'cases',
-    resourceId: newCase.id,
+    resourceId: newCase.id as string,
     newValues: req.body,
     ipAddress: req.ip,
     status: 'success',
