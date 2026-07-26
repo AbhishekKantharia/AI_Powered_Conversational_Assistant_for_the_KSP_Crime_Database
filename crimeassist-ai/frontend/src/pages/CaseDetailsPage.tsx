@@ -220,7 +220,7 @@ export default function CaseDetailsPage() {
             </div>
           )}
 
-          {c?.aiRiskScore ? (
+          {c?.aiRiskScore && (
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">AI Risk Assessment</h3>
               <div className="flex items-center space-x-3">
