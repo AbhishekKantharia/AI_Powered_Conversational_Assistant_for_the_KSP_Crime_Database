@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
   const { data: predictionData, isLoading: loadingPrediction } = usePredictionData()
 
   const categoryData = {
-    labels: dashboard?.crimeByCategory?.map((c) => c.crime_category.replace(/_/g, ' ')) ?? [],
+    labels: dashboard?.crimeByCategory?.map((c) => c.crimeCategory.replace(/_/g, ' ')) ?? [],
     datasets: [
       {
         data: dashboard?.crimeByCategory?.map((c) => c.count) ?? [],
@@ -55,17 +55,17 @@ export default function AnalyticsPage() {
   }
 
   const districtChartData = {
-    labels: districtData?.map((d: Record<string, unknown>) => d.district as string) ?? [],
+    labels: districtData?.map((d) => d.district) ?? [],
     datasets: [
       {
         label: 'Total FIR',
-        data: districtData?.map((d: Record<string, unknown>) => parseInt(d.total_fir as string) || 0) ?? [],
+        data: districtData?.map((d) => d.totalFir) ?? [],
         backgroundColor: '#3b82f6',
         borderRadius: 6,
       },
       {
         label: 'Open Cases',
-        data: districtData?.map((d: Record<string, unknown>) => parseInt(d.open_cases as string) || 0) ?? [],
+        data: districtData?.map((d) => d.openCases) ?? [],
         backgroundColor: '#f59e0b',
         borderRadius: 6,
       },
