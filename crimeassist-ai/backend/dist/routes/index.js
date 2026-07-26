@@ -42,5 +42,17 @@ function setupRoutes(app) {
     app.use('/api/settings', settings_routes_1.default);
     app.use('/api/evidence', evidence_routes_1.default);
     app.use('/api/public-data', public_data_routes_1.default);
+    // Also support root-level routes (for Catalyst Advanced I/O which strips function prefix)
+    app.use('/auth', auth_routes_1.default);
+    app.use('/cases', cases_routes_1.default);
+    app.use('/fir', fir_routes_1.default);
+    app.use('/criminals', criminals_routes_1.default);
+    app.use('/analytics', analytics_routes_1.default);
+    app.use('/ai', ai_routes_1.default);
+    app.use('/reports', reports_routes_1.default);
+    app.use('/users', users_routes_1.default);
+    app.use('/settings', settings_routes_1.default);
+    app.use('/evidence', evidence_routes_1.default);
+    app.use('/public-data', public_data_routes_1.default);
 }
 //# sourceMappingURL=index.js.map

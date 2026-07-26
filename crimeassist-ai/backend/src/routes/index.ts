@@ -42,4 +42,17 @@ export function setupRoutes(app: Application): void {
   app.use('/api/settings', settingsRouter)
   app.use('/api/evidence', evidenceRouter)
   app.use('/api/public-data', publicDataRouter)
+
+  // Also support root-level routes (for Catalyst Advanced I/O which strips function prefix)
+  app.use('/auth', authRouter)
+  app.use('/cases', casesRouter)
+  app.use('/fir', firRouter)
+  app.use('/criminals', criminalsRouter)
+  app.use('/analytics', analyticsRouter)
+  app.use('/ai', aiRouter)
+  app.use('/reports', reportsRouter)
+  app.use('/users', usersRouter)
+  app.use('/settings', settingsRouter)
+  app.use('/evidence', evidenceRouter)
+  app.use('/public-data', publicDataRouter)
 }
