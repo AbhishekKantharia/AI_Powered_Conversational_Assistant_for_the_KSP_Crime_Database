@@ -29,10 +29,10 @@ export default function CriminalProfilePage() {
     )
   }
 
-  const c = criminal as Record<string, unknown>
-  const aliases = (c.aliases as string[]) ?? []
-  const specs = (c.crime_specialization as string[]) ?? []
-  const cases = (c.cases as Record<string, unknown>[]) ?? []
+  const c = criminal as Criminal
+  const aliases = c.aliases ?? []
+  const specs = c.crimeSpecialization ?? []
+  const cases = (c.cases as Array<{ caseNumber: string; title: string; crimeCategory: string; status: string; caseRegisteredDate: string; roleInCrime?: string }>) ?? []
 
   return (
     <div className="space-y-6">
