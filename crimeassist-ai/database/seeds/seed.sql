@@ -3,8 +3,8 @@
 -- Karnataka State Police (KSP) Crime Investigation System
 -- =============================================================================
 -- Default password for all demo users: password
--- Bcrypt hash (10 rounds): $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
--- To change passwords, generate a new bcrypt hash and update the password_hash column.
+-- Bcryptjs hash (10 rounds): $2a$10$j91npNibJTGRQhx9KWmxb.7VCIAmvMXjvCDr9guVI.WaTE3vULxiS
+-- To change passwords, generate a new bcryptjs hash and update the password_hash column.
 -- =============================================================================
 
 BEGIN;
