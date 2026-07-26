@@ -5,17 +5,7 @@
 		"type": "advancedio",
 		"memory": 512,
 		"env_variables": {
-			"NODE_ENV": "production",
-			"ANTHROPIC_API_KEY": "<your-anthropic-api-key>",
-			"ANTHROPIC_MODEL": "claude-sonnet-4-20250514",
-			"JWT_SECRET": "<your-jwt-secret>",
-			"JWT_EXPIRY": "15m",
-			"JWT_REFRESH_EXPIRY": "7d",
-			"DATABASE_URL": "postgresql://<user>:<password>@<host>/<database>?sslmode=require",
-			"DB_SSL": "true",
-			"DB_POOL_MIN": "2",
-			"DB_POOL_MAX": "10",
-			"CORS_ORIGIN": "*"
+			"NODE_ENV": "production"
 		}
 	},
 	"execution": {

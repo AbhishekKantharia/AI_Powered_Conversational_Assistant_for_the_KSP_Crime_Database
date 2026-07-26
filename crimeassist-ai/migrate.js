@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const DATABASE_URL = 'postgresql://neondb_owner:npg_adBUIRGf1vs2@ep-dark-term-azppfafv.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://<user>:<password>@<host>/<database>?sslmode=require';
 
 async function runMigration() {
   const pool = new Pool({
