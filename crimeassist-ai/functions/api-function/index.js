@@ -1,11 +1,12 @@
 const path = require('path');
 
-// Set working directory to the bundled backend
+// Set working directory
 process.chdir(path.join(__dirname, 'backend'));
 
-// Load environment from Catalyst or .env
+// Load environment variables
 try { require('dotenv').config(); } catch(e) {}
 
-const app = require('./backend/dist/server');
+// Import the Express app from the compiled Catalyst entry point
+const app = require('./backend/src/catalyst');
 
 module.exports = app;
