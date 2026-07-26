@@ -8,7 +8,6 @@ import { query } from '../services/database.service'
 import { AppError } from '../middleware/error.middleware'
 import { writeAuditLog } from '../middleware/audit.middleware'
 import { aiService } from '../services/ai.service'
-import { io } from '../server'
 import { logger } from '../utils/logger'
 
 const router = Router()
