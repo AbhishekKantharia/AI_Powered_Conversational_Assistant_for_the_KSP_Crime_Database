@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { AlertTriangle, MapPin, ChevronLeft } from 'lucide-react'
 import { useCriminalDetail } from '../hooks/useAPI'
 import { getRiskBadgeClass, formatCurrency } from '../lib/utils'
+import type { Criminal } from '../types'
 
 export default function CriminalProfilePage() {
   const { id } = useParams()
