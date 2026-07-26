@@ -82,30 +82,32 @@ router.get('/dashboard', requirePermission('analytics:read'), async (req, res) =
 router.get('/crime-trends', requirePermission('analytics:read'), validate(AnalyticsQuerySchema, 'query'), async (req, res) => {
   const { districtId, year = new Date().getFullYear(), period } = req.query as { districtId?: string; year?: number; period?: string }
 
-  const conditions: string[] = [`EXTRACT(YEAR FROM f.incident_date) = ${year}`]
-  const params: unknown[] = []
+  const allowedTruncUnits: Record<string, string> = { weekly: 'week', monthly: 'month', quarterly: 'quarter', yearly: 'year' }
+  const truncUnit = allowedTruncUnits[period || 'monthly'] || 'month'
+
+  const conditions: string[] = [`EXTRACT(YEAR FROM f.incident_date) = $1`]
+  const params: unknown[] = [year]
+  let idx = 2
 
   if (districtId) {
-    conditions.push(`f.district_id = $1`)
+    conditions.push(`f.district_id = $${idx++}`)
     params.push(districtId)
   }
 
   const whereClause = `WHERE ${conditions.join(' AND ')}`
 
-  const truncUnit = period === 'weekly' ? 'week' : period === 'quarterly' ? 'quarter' : 'month'
-
   const result = await query(
     `SELECT
-       DATE_TRUNC('${truncUnit}', f.incident_date) AS period_start,
+       DATE_TRUNC($${idx}, f.incident_date) AS period_start,
        f.crime_category,
        d.name AS district_name,
        COUNT(*) AS count
      FROM fir f
      JOIN districts d ON d.id = f.district_id
      ${whereClause}
-     GROUP BY DATE_TRUNC('${truncUnit}', f.incident_date), f.crime_category, d.name
+     GROUP BY DATE_TRUNC($${idx}, f.incident_date), f.crime_category, d.name
      ORDER BY period_start ASC`,
-    params
+    [...params, truncUnit]
   )
 
   res.json({ success: true, data: result.rows })

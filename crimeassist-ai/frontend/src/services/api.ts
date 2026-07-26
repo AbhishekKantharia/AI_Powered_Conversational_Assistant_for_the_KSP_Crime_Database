@@ -3,7 +3,25 @@ import { useAuthStore } from '../stores/authStore'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
-// ─── Axios Instance ───────────────────────────────────────────────────────────
+function toCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
+function camelizeKeys(obj: unknown): unknown {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => camelizeKeys(item))
+  }
+  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([key, value]) => [
+        toCamelCase(key),
+        camelizeKeys(value),
+      ])
+    )
+  }
+  return obj
+}
+
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 30000,
@@ -12,7 +30,6 @@ export const apiClient: AxiosInstance = axios.create({
   },
 })
 
-// ─── Request Interceptor: Attach Auth Token ───────────────────────────────────
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken
@@ -24,12 +41,16 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ─── Response Interceptor: Handle Token Expiry ───────────────────────────────
 let isRefreshing = false
 let refreshQueue: Array<(token: string) => void> = []
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && typeof response.data === 'object') {
+      response.data = camelizeKeys(response.data)
+    }
+    return response
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as typeof error.config & { _retry?: boolean }
 

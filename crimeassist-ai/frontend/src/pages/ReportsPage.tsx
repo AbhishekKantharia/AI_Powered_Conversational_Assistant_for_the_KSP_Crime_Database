@@ -1,18 +1,29 @@
-import React, { useState } from 'react'
-import { FileSpreadsheet, Download, Share2, Plus, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { Download, Share2, Plus, FileText, Clock, CheckCircle2 } from 'lucide-react'
+import { useReports, useGenerateReport } from '../hooks/useAPI'
+import { formatDate } from '../lib/utils'
+import toast from 'react-hot-toast'
 
 export default function ReportsPage() {
-  const [reportType, setReportType] = useState('monthly_summary')
+  const [reportType, setReportType] = useState('crime_summary')
+  const [reportTitle, setReportTitle] = useState('')
 
-  const reports = [
-    { title: 'Karnataka Monthly Crime Audit - July 2026', type: 'Monthly Summary', date: '2026-07-25', status: 'Ready', size: '4.2 MB' },
-    { title: 'Bengaluru Urban Cybercrime Intelligence Report', type: 'Specialized', date: '2026-07-20', status: 'Ready', size: '2.8 MB' },
-    { title: 'Statewide Wanted Criminal Profile Dossier', type: 'Dossier', date: '2026-07-15', status: 'Ready', size: '8.5 MB' },
-  ]
+  const { data: reports, isLoading } = useReports()
+  const generateReport = useGenerateReport()
 
-  const handleGenerate = () => {
-    alert('Report generation initiated. The compiled PDF will download automatically when completed.')
+  const handleGenerate = async () => {
+    const title = reportTitle || `${reportType.replace(/_/g, ' ')} - ${new Date().toLocaleDateString('en-IN')}`
+
+    try {
+      await generateReport.mutateAsync({ type: reportType, title })
+      toast.success('Report generated successfully!')
+      setReportTitle('')
+    } catch {
+      toast.error('Failed to generate report. Please try again.')
+    }
   }
+
+  const reportList = (reports as unknown as Record<string, unknown>[]) ?? []
 
   return (
     <div className="space-y-6">
@@ -33,28 +44,35 @@ export default function ReportsPage() {
               onChange={(e) => setReportType(e.target.value)}
               className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white"
             >
-              <option value="monthly_summary">Monthly Crime Summary</option>
-              <option value="district_analysis">District Comparison Audit</option>
-              <option value="wanted_dossier">Wanted Criminals List</option>
-              <option value="cybercrime_special">Cybercrime Special Investigation</option>
+              <option value="crime_summary">Crime Summary Report</option>
+              <option value="district_report">District-wise Report</option>
+              <option value="criminal_report">Criminal Intelligence Report</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Format</label>
-            <select className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white">
-              <option>PDF Document</option>
-              <option>Excel Spreadsheet</option>
-            </select>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Custom Title (Optional)</label>
+            <input
+              type="text"
+              value={reportTitle}
+              onChange={(e) => setReportTitle(e.target.value)}
+              placeholder="Enter report title..."
+              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <div className="flex items-end">
             <button
               onClick={handleGenerate}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2"
+              disabled={generateReport.isPending}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
-              <span>Generate Report</span>
+              {generateReport.isPending ? (
+                <Clock className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              <span>{generateReport.isPending ? 'Generating...' : 'Generate Report'}</span>
             </button>
           </div>
         </div>
@@ -66,22 +84,45 @@ export default function ReportsPage() {
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">Archived Reports Directory</h2>
         </div>
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {reports.map((r, idx) => (
-            <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 text-xs">
-              <div>
-                <p className="font-bold text-slate-900 dark:text-white">{r.title}</p>
-                <p className="text-[10px] text-slate-400">{r.type} • Created {r.date} • {r.size}</p>
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="p-4 animate-pulse">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-2" />
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4" />
               </div>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-blue-600 hover:bg-blue-500/10 rounded-lg">
-                  <Download className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
+            ))
+          ) : reportList.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-xs">
+              No reports generated yet. Create your first report above.
             </div>
-          ))}
+          ) : (
+            reportList.map((r, idx) => (
+              <div key={(r.id as string) || idx} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 text-xs">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-white">{(r.title as string) || 'Untitled Report'}</p>
+                    <p className="text-[10px] text-slate-400">
+                      Type: {(r.report_type as string)?.replace(/_/g, ' ')} &bull; Created {formatDate(r.created_at as string)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 flex items-center">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Ready
+                  </span>
+                  <button className="p-2 text-blue-600 hover:bg-blue-500/10 rounded-lg">
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -62,9 +62,9 @@ router.post('/chat', requirePermission('ai:chat'), rateLimitAI, validate(ChatSch
 
   // Build message array
   const messages = [
-    ...history.map((m: { role: string; content: string }) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
+    ...history.map((m) => ({
+      role: (m as { role: string }).role as 'user' | 'assistant',
+      content: (m as { content: string }).content,
     })),
     { role: 'user' as const, content: message },
   ]
@@ -132,9 +132,9 @@ router.post('/chat/stream', requirePermission('ai:chat'), rateLimitAI, validate(
   )
 
   const messages = [
-    ...history.map((m: { role: string; content: string }) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
+    ...history.map((m) => ({
+      role: (m as { role: string }).role as 'user' | 'assistant',
+      content: (m as { content: string }).content,
     })),
     { role: 'user' as const, content: message },
   ]

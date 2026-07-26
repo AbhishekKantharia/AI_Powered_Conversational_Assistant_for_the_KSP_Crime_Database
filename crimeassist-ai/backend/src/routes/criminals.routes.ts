@@ -203,9 +203,30 @@ router.put('/:id', requirePermission('criminals:update'), validate(UUIDSchema, '
 })
 
 // ─── GET /criminals/wanted ────────────────────────────────────────────────────
-router.get('/list/wanted', requirePermission('criminals:read'), async (req, res) => {
+router.get('/wanted', requirePermission('criminals:read'), async (_req, res) => {
   const result = await query(`SELECT * FROM v_wanted_criminals LIMIT 50`)
   res.json({ success: true, data: result.rows })
+})
+
+// ─── DELETE /criminals/:id ────────────────────────────────────────────────────
+router.delete('/:id', requirePermission('criminals:delete'), validate(UUIDSchema, 'params'), async (req, res) => {
+  const existing = await query('SELECT * FROM criminals WHERE id = $1', [req.params.id])
+  if (existing.rowCount === 0) throw new AppError('Criminal not found', 404, 'NOT_FOUND')
+
+  await query('DELETE FROM suspects WHERE criminal_id = $1', [req.params.id])
+  await query('DELETE FROM criminals WHERE id = $1', [req.params.id])
+
+  await writeAuditLog({
+    userId: req.user!.userId,
+    action: 'DELETE_CRIMINAL',
+    resourceType: 'criminals',
+    resourceId: req.params.id,
+    oldValues: existing.rows[0],
+    ipAddress: req.ip,
+    status: 'success',
+  })
+
+  res.json({ success: true, message: 'Criminal record deleted' })
 })
 
 export default router

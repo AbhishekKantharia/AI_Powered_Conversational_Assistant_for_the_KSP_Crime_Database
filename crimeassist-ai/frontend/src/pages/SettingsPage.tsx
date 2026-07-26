@@ -1,12 +1,16 @@
-import React, { useState } from 'react'
-import { User, Shield, Key, FileText, Bell, Moon, Lock } from 'lucide-react'
+import { useState } from 'react'
+import { Moon } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { useUIStore } from '../stores/uiStore'
+import { useAuditLogs } from '../hooks/useAPI'
+import { formatDateTime } from '../lib/utils'
 
 export default function SettingsPage() {
   const { user } = useAuthStore()
   const { darkMode, toggleDarkMode } = useUIStore()
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'audit'>('profile')
+
+  const { data: auditLogs, isLoading: loadingAudit } = useAuditLogs(activeTab === 'audit' ? { limit: 50 } : undefined)
 
   return (
     <div className="space-y-6">
@@ -39,19 +43,23 @@ export default function SettingsPage() {
               {user?.fullName?.charAt(0) || 'O'}
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">{user?.fullName}</h2>
-              <p className="text-xs text-slate-400">Badge: {user?.badgeNumber || 'KSP-8821'} • {user?.rank || 'Senior Inspector'}</p>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">{user?.fullName || 'Officer'}</h2>
+              <p className="text-xs text-slate-400">Badge: {user?.badgeNumber || 'N/A'} &bull; Role: {user?.role?.replace(/_/g, ' ')}</p>
             </div>
           </div>
 
           <div className="space-y-4 text-xs">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Email Address</label>
-              <input type="email" value={user?.email || 'officer@ksp.gov.in'} readOnly className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              <input type="email" value={user?.email || ''} readOnly className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Station Jurisdiction</label>
-              <input type="text" value={user?.stationName || 'Central Silk Board Police Station'} readOnly className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl" />
+              <input type="text" value={user?.stationName || 'N/A'} readOnly className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">District</label>
+              <input type="text" value={user?.districtName || 'N/A'} readOnly className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
             </div>
           </div>
         </div>
@@ -65,9 +73,20 @@ export default function SettingsPage() {
               <p className="font-bold text-slate-900 dark:text-white">Dark Mode Interface</p>
               <p className="text-[10px] text-slate-400">Toggle dark theme dashboard styling</p>
             </div>
-            <button onClick={toggleDarkMode} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold">
-              {darkMode ? 'Disable Dark' : 'Enable Dark'}
+            <button onClick={toggleDarkMode} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold flex items-center space-x-1">
+              <Moon className="w-3.5 h-3.5" />
+              <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
+          </div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+            <p className="font-bold text-slate-900 dark:text-white mb-1">Two-Factor Authentication</p>
+            <p className="text-[10px] text-slate-400 mb-2">
+              Status: {user?.twoFactorEnabled ? (
+                <span className="text-emerald-500 font-bold">Enabled</span>
+              ) : (
+                <span className="text-amber-500 font-bold">Disabled</span>
+              )}
+            </p>
           </div>
         </div>
       )}
@@ -77,15 +96,31 @@ export default function SettingsPage() {
           <div className="p-4 border-b border-slate-200 dark:border-slate-800">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">System Audit Trail Logs</h2>
           </div>
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 p-4 space-y-2">
-            <div className="flex justify-between py-2">
-              <span>[2026-07-26 18:10] LOGIN_SUCCESS by KSP-8821</span>
-              <span className="text-emerald-500 font-bold">SUCCESS</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span>[2026-07-26 18:12] AI_CHAT_QUERY: "Phishing section"</span>
-              <span className="text-emerald-500 font-bold">SUCCESS</span>
-            </div>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {loadingAudit ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 animate-pulse">
+                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-2/3" />
+                </div>
+              ))
+            ) : !auditLogs || (auditLogs as unknown[]).length === 0 ? (
+              <div className="p-8 text-center text-slate-500">
+                No audit logs found.
+              </div>
+            ) : (
+              (auditLogs as Record<string, unknown>[]).map((log, idx) => (
+                <div key={(log.id as string) || idx} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                  <div>
+                    <span className="text-slate-500">[{formatDateTime(log.created_at as string)}]</span>{' '}
+                    <span className="font-bold text-slate-900 dark:text-white">{log.action as string}</span>
+                    <span className="text-slate-500 ml-1">by {(log.user_id as string)?.slice(0, 8)}</span>
+                  </div>
+                  <span className={`font-bold ${log.status === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {(log.status as string)?.toUpperCase()}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

@@ -1,0 +1,16 @@
+{
+  "config": {
+    "runtime": {
+      "edition": "Node.js",
+      "version": "18.15"
+    },
+    "functions": [
+      {
+        "path": "./index.js",
+        "method": "POST",
+        "auth": true,
+        "streaming": false
+      }
+    ]
+  }
+}

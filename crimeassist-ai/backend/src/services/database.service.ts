@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg'
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg'
 import { logger } from '../utils/logger'
 
 let pool: Pool | null = null
@@ -53,7 +53,7 @@ export async function disconnectDB(): Promise<void> {
 }
 
 // ─── Query Helper ────────────────────────────────────────────────────────────
-export async function query<T = Record<string, unknown>>(
+export async function query<T extends QueryResultRow = Record<string, unknown>>(
   text: string,
   params?: unknown[]
 ): Promise<QueryResult<T>> {
