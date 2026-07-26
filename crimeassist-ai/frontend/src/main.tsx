@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <HashRouter>
         <App />
         <Toaster
           position="top-right"
@@ -55,7 +55,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             },
           }}
         />
-      </BrowserRouter>
+      </HashRouter>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </React.StrictMode>
