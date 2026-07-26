@@ -73,14 +73,14 @@ export default function AnalyticsPage() {
   }
 
   const predictionChartData = {
-    labels: predictionData?.map((p: Record<string, unknown>) => {
-      const date = new Date(p.month as string)
+    labels: predictionData?.map((p) => {
+      const date = new Date(p.month)
       return date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
     }) ?? [],
     datasets: [
       {
         label: 'FIR Volume (Historical)',
-        data: predictionData?.map((p: Record<string, unknown>) => parseInt(p.count as string) || 0) ?? [],
+        data: predictionData?.map((p) => p.count) ?? [],
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
       },
       {
         label: '3-Month Moving Average',
-        data: predictionData?.map((p: Record<string, unknown>) => Math.round(parseFloat(p.moving_avg_3 as string) || 0)) ?? [],
+        data: predictionData?.map((p) => Math.round(p.movingAvg3 || 0)) ?? [],
         borderColor: '#8b5cf6',
         borderDash: [5, 5],
         fill: false,
@@ -98,21 +98,21 @@ export default function AnalyticsPage() {
   }
 
   const riskData = {
-    labels: criminalStats?.riskDistribution?.map((r) => r.risk_level) ?? [],
+    labels: criminalStats?.riskDistribution?.map((r) => r.riskLevel) ?? [],
     datasets: [
       {
-        data: criminalStats?.riskDistribution?.map((r) => parseInt(r.count as unknown as string) || 0) ?? [],
+        data: criminalStats?.riskDistribution?.map((r) => r.count) ?? [],
         backgroundColor: ['#22c55e', '#f59e0b', '#f97316', '#ef4444'],
       },
     ],
   }
 
   const ageData = {
-    labels: criminalStats?.ageGroups?.map((a) => a.age_group) ?? [],
+    labels: criminalStats?.ageGroups?.map((a) => a.ageGroup) ?? [],
     datasets: [
       {
         label: 'Criminals',
-        data: criminalStats?.ageGroups?.map((a) => parseInt(a.count as unknown as string) || 0) ?? [],
+        data: criminalStats?.ageGroups?.map((a) => a.count) ?? [],
         backgroundColor: '#1d4ed8',
         borderRadius: 8,
       },
@@ -201,7 +201,7 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {criminalStats.wantedByDistrict.map((d, idx) => (
               <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-center">
-                <p className="text-lg font-extrabold text-rose-500">{d.wanted_count}</p>
+                <p className="text-lg font-extrabold text-rose-500">{d.wantedCount}</p>
                 <p className="text-[10px] font-semibold text-slate-500 mt-1">{d.district}</p>
               </div>
             ))}

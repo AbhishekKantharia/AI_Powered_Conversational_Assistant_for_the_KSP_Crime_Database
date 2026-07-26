@@ -99,6 +99,7 @@ export interface Case {
   stationId: string
   stationName: string
   assignedOfficer?: string
+  assignedOfficerName?: string
   officerBadge?: string
   officerRank?: string
   incidentDate?: string
