@@ -1,15 +1,16 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { query, globalVectorSearch, withTransaction } from './database.service'
 import { logger } from '../utils/logger'
 import { fetchIPCSections, fetchKarnatakaCrimeStats, searchIPCSections } from './publicData.service'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const openai = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY || process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
 })
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
-const MAX_TOKENS = parseInt(process.env.ANTHROPIC_MAX_TOKENS || '4096')
-const TEMPERATURE = parseFloat(process.env.ANTHROPIC_TEMPERATURE || '0.2')
+const MODEL = process.env.LLM_MODEL || 'llama-3.3-70b-versatile'
+const MAX_TOKENS = parseInt(process.env.LLM_MAX_TOKENS || '4096')
+const TEMPERATURE = parseFloat(process.env.LLM_TEMPERATURE || '0.2')
 
 // ─── KSP System Prompt ───────────────────────────────────────────────────────
 const KSP_SYSTEM_PROMPT = `You are CrimeAssist AI, an expert crime investigation assistant for the Karnataka State Police (KSP). You have deep knowledge of:
@@ -38,9 +39,8 @@ Current date: ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata
 Database: Karnataka State Police Crime Database`
 
 // ─── Embedding Generation ─────────────────────────────────────────────────────
-// Anthropic does not provide an embedding API. We use keyword-based search as fallback.
 export async function generateEmbedding(_text: string): Promise<number[]> {
-  logger.warn('Embedding generation requested but Anthropic does not support embeddings. Returning empty vector.')
+  logger.warn('Embedding generation requested but Groq does not support embeddings. Returning empty vector.')
   return []
 }
 
@@ -93,7 +93,6 @@ async function retrieveContext(
   _limit: number = 8,
   _threshold: number = 0.6
 ): Promise<Array<{ text: string; source: string; sourceId: string; similarity: number }>> {
-  // Try vector search first, fall back to keyword search
   try {
     const queryEmbedding = await generateEmbedding(userQuery)
     if (queryEmbedding.length > 0) {
@@ -108,7 +107,6 @@ async function retrieveContext(
     }
   } catch {}
 
-  // Keyword-based fallback search
   try {
     const keywords = userQuery.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
     if (keywords.length === 0) return []
@@ -232,25 +230,24 @@ export async function chat(
     }
   }
 
-  // Build Anthropic messages (system prompt is separate)
-  const anthropicMessages: Anthropic.MessageParam[] = [
+  const openaiMessages: OpenAI.ChatCompletionMessageParam[] = [
+    { role: 'system', content: KSP_SYSTEM_PROMPT },
     ...messages.slice(0, -1).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
-    { role: 'user' as const, content: augmentedQuery },
+    { role: 'user', content: augmentedQuery },
   ]
 
-  const response = await anthropic.messages.create({
+  const response = await openai.chat.completions.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     temperature: TEMPERATURE,
-    system: KSP_SYSTEM_PROMPT,
-    messages: anthropicMessages,
+    messages: openaiMessages,
   })
 
-  const content = response.content[0]?.type === 'text' ? response.content[0].text : 'Unable to generate response'
-  const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0)
+  const content = response.choices[0]?.message?.content || 'Unable to generate response'
+  const tokensUsed = (response.usage?.prompt_tokens || 0) + (response.usage?.completion_tokens || 0)
   const processingTimeMs = Date.now() - startTime
 
   return { content, sources, tokensUsed, processingTimeMs, model: MODEL }
@@ -276,32 +273,39 @@ export async function chatStream(
     } catch {}
   }
 
-  const anthropicMessages: Anthropic.MessageParam[] = [
+  const openaiMessages: OpenAI.ChatCompletionMessageParam[] = [
+    { role: 'system', content: KSP_SYSTEM_PROMPT },
     ...messages.slice(0, -1).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
-    { role: 'user' as const, content: augmentedQuery },
+    { role: 'user', content: augmentedQuery },
   ]
 
-  const stream = anthropic.messages.stream({
+  const stream = await openai.chat.completions.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     temperature: TEMPERATURE,
-    system: KSP_SYSTEM_PROMPT,
-    messages: anthropicMessages,
+    messages: openaiMessages,
+    stream: true,
   })
 
   let totalContent = ''
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      totalContent += event.delta.text
-      onChunk(event.delta.text)
+  let promptTokens = 0
+  let completionTokens = 0
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content
+    if (delta) {
+      totalContent += delta
+      onChunk(delta)
+    }
+    if (chunk.usage) {
+      promptTokens = chunk.usage.prompt_tokens || 0
+      completionTokens = chunk.usage.completion_tokens || 0
     }
   }
 
-  const finalMessage = await stream.finalMessage()
-  const tokensUsed = (finalMessage.usage?.input_tokens || 0) + (finalMessage.usage?.output_tokens || 0)
+  const tokensUsed = promptTokens + completionTokens
   onDone({ tokensUsed, sources })
 }
 
@@ -336,12 +340,12 @@ export async function summarizeCase(caseId: string): Promise<string> {
     Recent Notes: ${notes.rows.map((n) => { const nn = n as { note_type: string; content: string }; return `[${nn.note_type}] ${nn.content}` }).join('\n')}
   `
 
-  const response = await anthropic.messages.create({
+  const response = await openai.chat.completions.create({
     model: MODEL,
     max_tokens: 1000,
     temperature: 0.3,
-    system: KSP_SYSTEM_PROMPT,
     messages: [
+      { role: 'system', content: KSP_SYSTEM_PROMPT },
       {
         role: 'user',
         content: `Please provide a professional 3-paragraph case summary for the following case data. Include: 1) Case overview and current status, 2) Key suspects and victims, 3) Investigation progress and recommendations.\n\n${caseText}`,
@@ -349,7 +353,7 @@ export async function summarizeCase(caseId: string): Promise<string> {
     ],
   })
 
-  const summary = response.content[0]?.type === 'text' ? response.content[0].text : ''
+  const summary = response.choices[0]?.message?.content || ''
 
   await query('UPDATE cases SET ai_summary = $1, updated_at = NOW() WHERE id = $2', [summary, caseId])
 
@@ -406,7 +410,6 @@ export async function detectDuplicateFIR(firId: string): Promise<{ isDuplicate: 
 
   const f = fir.rows[0] as { fir_number: string; crime_description: string; incident_location: string; incident_date: string }
 
-  // Use keyword-based search for duplicate detection
   const keywords = `${f.crime_description} ${f.incident_location}`.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
   if (keywords.length === 0) return { isDuplicate: false }
 

@@ -12,16 +12,17 @@ exports.summarizeCase = summarizeCase;
 exports.calculateRiskScore = calculateRiskScore;
 exports.detectDuplicateFIR = detectDuplicateFIR;
 exports.semanticSearch = semanticSearch;
-const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
+const openai_1 = __importDefault(require("openai"));
 const database_service_1 = require("./database.service");
 const logger_1 = require("../utils/logger");
 const publicData_service_1 = require("./publicData.service");
-const anthropic = new sdk_1.default({
-    apiKey: process.env.ANTHROPIC_API_KEY,
+const openai = new openai_1.default({
+    apiKey: process.env.GROQ_API_KEY || process.env.ANTHROPIC_API_KEY,
+    baseURL: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
 });
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514';
-const MAX_TOKENS = parseInt(process.env.ANTHROPIC_MAX_TOKENS || '4096');
-const TEMPERATURE = parseFloat(process.env.ANTHROPIC_TEMPERATURE || '0.2');
+const MODEL = process.env.LLM_MODEL || 'llama-3.3-70b-versatile';
+const MAX_TOKENS = parseInt(process.env.LLM_MAX_TOKENS || '4096');
+const TEMPERATURE = parseFloat(process.env.LLM_TEMPERATURE || '0.2');
 // ─── KSP System Prompt ───────────────────────────────────────────────────────
 const KSP_SYSTEM_PROMPT = `You are CrimeAssist AI, an expert crime investigation assistant for the Karnataka State Police (KSP). You have deep knowledge of:
 
@@ -48,9 +49,8 @@ When answering questions:
 Current date: ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
 Database: Karnataka State Police Crime Database`;
 // ─── Embedding Generation ─────────────────────────────────────────────────────
-// Anthropic does not provide an embedding API. We use keyword-based search as fallback.
 async function generateEmbedding(_text) {
-    logger_1.logger.warn('Embedding generation requested but Anthropic does not support embeddings. Returning empty vector.');
+    logger_1.logger.warn('Embedding generation requested but Groq does not support embeddings. Returning empty vector.');
     return [];
 }
 // ─── Document Chunking ────────────────────────────────────────────────────────
@@ -81,7 +81,6 @@ async function indexDocument(sourceType, sourceId, text, metadata = {}) {
 }
 // ─── RAG Context Retrieval ────────────────────────────────────────────────────
 async function retrieveContext(userQuery, _limit = 8, _threshold = 0.6) {
-    // Try vector search first, fall back to keyword search
     try {
         const queryEmbedding = await generateEmbedding(userQuery);
         if (queryEmbedding.length > 0) {
@@ -96,7 +95,6 @@ async function retrieveContext(userQuery, _limit = 8, _threshold = 0.6) {
         }
     }
     catch { }
-    // Keyword-based fallback search
     try {
         const keywords = userQuery.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
         if (keywords.length === 0)
@@ -181,23 +179,22 @@ async function chat(messages, sessionId, useRAG = true) {
             logger_1.logger.warn('RAG retrieval failed, falling back to direct response:', err);
         }
     }
-    // Build Anthropic messages (system prompt is separate)
-    const anthropicMessages = [
+    const openaiMessages = [
+        { role: 'system', content: KSP_SYSTEM_PROMPT },
         ...messages.slice(0, -1).map((m) => ({
             role: m.role,
             content: m.content,
         })),
         { role: 'user', content: augmentedQuery },
     ];
-    const response = await anthropic.messages.create({
+    const response = await openai.chat.completions.create({
         model: MODEL,
         max_tokens: MAX_TOKENS,
         temperature: TEMPERATURE,
-        system: KSP_SYSTEM_PROMPT,
-        messages: anthropicMessages,
+        messages: openaiMessages,
     });
-    const content = response.content[0]?.type === 'text' ? response.content[0].text : 'Unable to generate response';
-    const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0);
+    const content = response.choices[0]?.message?.content || 'Unable to generate response';
+    const tokensUsed = (response.usage?.prompt_tokens || 0) + (response.usage?.completion_tokens || 0);
     const processingTimeMs = Date.now() - startTime;
     return { content, sources, tokensUsed, processingTimeMs, model: MODEL };
 }
@@ -216,29 +213,36 @@ async function chatStream(messages, onChunk, onDone) {
         }
         catch { }
     }
-    const anthropicMessages = [
+    const openaiMessages = [
+        { role: 'system', content: KSP_SYSTEM_PROMPT },
         ...messages.slice(0, -1).map((m) => ({
             role: m.role,
             content: m.content,
         })),
         { role: 'user', content: augmentedQuery },
     ];
-    const stream = anthropic.messages.stream({
+    const stream = await openai.chat.completions.create({
         model: MODEL,
         max_tokens: MAX_TOKENS,
         temperature: TEMPERATURE,
-        system: KSP_SYSTEM_PROMPT,
-        messages: anthropicMessages,
+        messages: openaiMessages,
+        stream: true,
     });
     let totalContent = '';
-    for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            totalContent += event.delta.text;
-            onChunk(event.delta.text);
+    let promptTokens = 0;
+    let completionTokens = 0;
+    for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+            totalContent += delta;
+            onChunk(delta);
+        }
+        if (chunk.usage) {
+            promptTokens = chunk.usage.prompt_tokens || 0;
+            completionTokens = chunk.usage.completion_tokens || 0;
         }
     }
-    const finalMessage = await stream.finalMessage();
-    const tokensUsed = (finalMessage.usage?.input_tokens || 0) + (finalMessage.usage?.output_tokens || 0);
+    const tokensUsed = promptTokens + completionTokens;
     onDone({ tokensUsed, sources });
 }
 // ─── Case Summarization ───────────────────────────────────────────────────────
@@ -270,19 +274,19 @@ async function summarizeCase(caseId) {
     Victims: ${victims.rows.length}
     Recent Notes: ${notes.rows.map((n) => { const nn = n; return `[${nn.note_type}] ${nn.content}`; }).join('\n')}
   `;
-    const response = await anthropic.messages.create({
+    const response = await openai.chat.completions.create({
         model: MODEL,
         max_tokens: 1000,
         temperature: 0.3,
-        system: KSP_SYSTEM_PROMPT,
         messages: [
+            { role: 'system', content: KSP_SYSTEM_PROMPT },
             {
                 role: 'user',
                 content: `Please provide a professional 3-paragraph case summary for the following case data. Include: 1) Case overview and current status, 2) Key suspects and victims, 3) Investigation progress and recommendations.\n\n${caseText}`,
             },
         ],
     });
-    const summary = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    const summary = response.choices[0]?.message?.content || '';
     await (0, database_service_1.query)('UPDATE cases SET ai_summary = $1, updated_at = NOW() WHERE id = $2', [summary, caseId]);
     await indexDocument('case', caseId, `${c.title}\n${c.description}\n${summary}`, {
         caseNumber: c.case_number,
@@ -326,7 +330,6 @@ async function detectDuplicateFIR(firId) {
     if (fir.rowCount === 0)
         return { isDuplicate: false };
     const f = fir.rows[0];
-    // Use keyword-based search for duplicate detection
     const keywords = `${f.crime_description} ${f.incident_location}`.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
     if (keywords.length === 0)
         return { isDuplicate: false };
