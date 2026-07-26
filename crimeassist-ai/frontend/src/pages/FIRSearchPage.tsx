@@ -155,26 +155,26 @@ export default function FIRSearchPage() {
                   </td>
                 </tr>
               ) : (
-                firList.map((item: Record<string, unknown>) => (
-                  <tr key={item.id as string} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                firList.map((item: FIR) => (
+                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="p-4 font-mono font-bold text-blue-600 dark:text-blue-400">
-                      {item.fir_number as string}
+                      {item.firNumber}
                     </td>
                     <td className="p-4 font-medium text-slate-900 dark:text-white">
-                      {item.complainant_name as string}
+                      {item.complainantName}
                     </td>
                     <td className="p-4 text-slate-500">
-                      {formatDate(item.incident_date as string)}
+                      {formatDate(item.incidentDate)}
                     </td>
                     <td className="p-4 text-slate-700 dark:text-slate-300">
-                      {item.district_name as string ?? 'N/A'}
+                      {item.districtName ?? 'N/A'}
                     </td>
                     <td className="p-4 capitalize">
-                      {(item.crime_category as string)?.replace(/_/g, ' ')}
+                      {item.crimeCategory?.replace(/_/g, ' ')}
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusColor(item.status as string)}`}>
-                        {(item.status as string)?.replace(/_/g, ' ')}
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${getStatusColor(item.status)}`}>
+                        {item.status?.replace(/_/g, ' ')}
                       </span>
                     </td>
                     <td className="p-4 text-right">
