@@ -1,0 +1,64 @@
+[debug] [2026-07-26T15:53:19.901Z] : 
+[debug] [2026-07-26T15:53:19.918Z] : ----------------------------------------------------------------------
+[debug] [2026-07-26T15:53:19.918Z] : Command:      C:\Program Files\nodejs\node.exe C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js project:list --org 60072881979
+[debug] [2026-07-26T15:53:19.918Z] : CLI Version:  1.27.0
+[debug] [2026-07-26T15:53:19.918Z] : Platform:     win32
+[debug] [2026-07-26T15:53:19.918Z] : Node Version: v24.15.0
+[debug] [2026-07-26T15:53:19.919Z] : Time:         Sun Jul 26 2026 21:23:19 GMT+0530 (India Standard Time)
+[debug] [2026-07-26T15:53:19.919Z] : ----------------------------------------------------------------------
+[debug] [2026-07-26T15:53:19.919Z] : 
+[debug] [2026-07-26T15:53:23.379Z] : > authorizing via signed-in user option
+[debug] [2026-07-26T15:53:23.380Z] : > command requires scopes: ["ZohoCatalyst.projects.ALL","ZohoCatalyst.projects.ALL"]
+[debug] [2026-07-26T15:53:23.506Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/orgs 
+
+[debug] [2026-07-26T15:53:23.611Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Sun, 26 Jul 2026 15:53:26 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+
+[debug] [2026-07-26T15:53:23.620Z] : >>>> HTTP REQUEST : GET https://api.catalyst.zoho.in/baas/v1/project 
+
+[debug] [2026-07-26T15:53:23.646Z] : <<<< HTTP RESPONSE : 200
+Response Headers: {"server":"ZGS","date":"Sun, 26 Jul 2026 15:53:26 GMT","content-type":"application/vnd.catalyst.v2+json","transfer-encoding":"chunked","connection":"keep-alive","x-content-type-options":"nosniff","cache-control":"private,no-cache,no-store,max-age=0,must-revalidate","pragma":"no-cache","expires":"Thu, 01 Jan 1970 00:00:00 GMT","x-frame-options":"DENY","strict-transport-security":"max-age=64072000; includeSubDomains; preload"}
+
+[info] [2026-07-26T15:53:23.660Z] : 
+┌──────────────────┬───────────────────┐
+│   Project Name   │    Project ID     │
+├──────────────────┼───────────────────┤
+│ Project-Rainfall │ 43118000000013026 │
+└──────────────────┴───────────────────┘
+[debug] [2026-07-26T15:53:23.661Z] : NO ERRORS REGISTERED
+[debug] [2026-07-26T15:53:23.661Z] : EXEC ENDED with event: project:list, message: success
+[debug] [2026-07-26T15:53:23.662Z] : TOTAL DURATION OF COMMAND EXEC : 310
+[debug] [2026-07-26T15:53:23.664Z] : Unable to initialise the log API
+[error] [2026-07-26T15:53:23.730Z] : × An unexpected error has occurred.
+[debug] [2026-07-26T15:53:23.730Z] : Error Stack: CatalystError: An unexpected error has occurred.
+    at exports.default (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\errorOut.js:13:17)
+    at process.<anonymous> (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js:129:28)
+    at process.emit (node:events:509:28)
+    at emitUnhandledRejection (node:internal/process/promises:252:13)
+    at throwUnhandledRejectionsMode (node:internal/process/promises:388:19)
+    at processPromiseRejections (node:internal/process/promises:475:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:32)
+[debug] [2026-07-26T15:53:23.730Z] : Original Error: Error: Error: EPERM, Permission denied: \\?\C:\Users\abhis\Downloads\AI_Powered_Conversational_Assistant_for_the_KSP_Crime_Database\crimeassist-ai\catalyst-debug.log '\\?\C:\Users\abhis\Downloads\AI_Powered_Conversational_Assistant_for_the_KSP_Crime_Database\crimeassist-ai\catalyst-debug.log'
+    at Object.rmSync (node:fs:1222:18)
+    at Object.removeSync (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\node_modules\fs-extra\lib\remove\index.js:15:28)
+    at Object.deleteFile (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\util_modules\fs\lib\sync.js:100:31)
+    at process.<anonymous> (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js:117:14)
+    at process.emit (node:events:521:24)
+    at process.exit (node:internal/process/per_thread:236:15)
+    at C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js:112:13
+    at Generator.next (<anonymous>)
+    at fulfilled (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js:39:58) {
+  errno: 1,
+  code: 'EPERM',
+  path: '\\\\?\\C:\\Users\\abhis\\Downloads\\AI_Powered_Conversational_Assistant_for_the_KSP_Crime_Database\\crimeassist-ai\\catalyst-debug.log',
+  syscall: 'rm'
+}
+    at exports.default (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\errorOut.js:15:23)
+    at process.<anonymous> (C:\Users\abhis\AppData\Roaming\npm\node_modules\zcatalyst-cli\lib\bin\catalyst.js:129:28)
+    at process.emit (node:events:509:28)
+    at emitUnhandledRejection (node:internal/process/promises:252:13)
+    at throwUnhandledRejectionsMode (node:internal/process/promises:388:19)
+    at processPromiseRejections (node:internal/process/promises:475:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:32)
+[debug] [2026-07-26T15:53:23.730Z] : Error Status: 500
+[info] [2026-07-26T15:53:23.730Z] : Kindly contact Catalyst support [support@zohocatalyst.com] if you need any further assistance
