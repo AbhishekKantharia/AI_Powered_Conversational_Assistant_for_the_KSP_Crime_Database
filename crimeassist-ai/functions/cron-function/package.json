@@ -1,7 +1,6 @@
 {
-  "name": "crimeassist-cron",
+  "name": "cron-function",
   "version": "1.0.0",
-  "description": "CrimeAssist AI Cron Function - Scheduled tasks",
   "main": "index.js",
   "dependencies": {
     "zcatalyst-sdk-node": "^2.5.0",

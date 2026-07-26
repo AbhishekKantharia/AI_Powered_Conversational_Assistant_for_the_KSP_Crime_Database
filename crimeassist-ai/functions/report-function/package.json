@@ -1,7 +1,6 @@
 {
-  "name": "crimeassist-report",
+  "name": "report-function",
   "version": "1.0.0",
-  "description": "CrimeAssist AI Report Generation Function",
   "main": "index.js",
   "dependencies": {
     "zcatalyst-sdk-node": "^2.5.0",
