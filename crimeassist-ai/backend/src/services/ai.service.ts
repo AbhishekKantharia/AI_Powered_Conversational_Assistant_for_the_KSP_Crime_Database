@@ -288,9 +288,9 @@ export async function summarizeCase(caseId: string): Promise<string> {
     Station: ${c.station}
     Description: ${c.description}
     IPC Sections: ${(c.ipc_sections || []).join(', ')}
-    Suspects: ${suspects.rows.length} (${suspects.rows.map((s: { full_name: string }) => s.full_name).join(', ')})
+    Suspects: ${suspects.rows.length} (${suspects.rows.map((s) => (s as { full_name: string }).full_name).join(', ')})
     Victims: ${victims.rows.length}
-    Recent Notes: ${notes.rows.map((n: { note_type: string; content: string }) => `[${n.note_type}] ${n.content}`).join('\n')}
+    Recent Notes: ${notes.rows.map((n) => { const nn = n as { note_type: string; content: string }; return `[${nn.note_type}] ${nn.content}` }).join('\n')}
   `
 
   const response = await openai.chat.completions.create({

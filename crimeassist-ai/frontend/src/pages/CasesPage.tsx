@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plus, Search, ArrowUpRight, ShieldAlert } from 'lucide-react'
 import { useCaseList } from '../hooks/useAPI'
 import { getStatusColor } from '../lib/utils'
+import type { Case } from '../types'
 
 export default function CasesPage() {
   const [search, setSearch] = useState('')
