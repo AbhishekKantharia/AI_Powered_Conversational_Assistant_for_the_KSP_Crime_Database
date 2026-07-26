@@ -42,8 +42,8 @@ export default function CriminalProfilePage() {
           <ChevronLeft className="w-4 h-4" />
         </Link>
         <div>
-          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{c.criminal_id as string}</span>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">{c.full_name as string}</h1>
+          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{c.criminalId}</span>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">{c.fullName}</h1>
         </div>
       </div>
 
@@ -52,17 +52,17 @@ export default function CriminalProfilePage() {
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-2xl bg-slate-800 border-2 border-slate-600 flex items-center justify-center font-bold text-3xl text-slate-400 mb-3 shadow-xl">
-              {(c.full_name as string)?.charAt(0)}
+              {c.fullName?.charAt(0)}
             </div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">{c.full_name as string}</h2>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">{c.fullName}</h2>
             {aliases.length > 0 && (
               <p className="text-xs text-slate-400">Aliases: {aliases.join(', ')}</p>
             )}
 
-            {(c.is_wanted as boolean) && (
+            {c.isWanted && (
               <div className="mt-4 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold text-xs flex items-center">
                 <AlertTriangle className="w-4 h-4 mr-1.5" /> WANTED
-                {c.reward_amount && <span className="ml-1">&bull; {formatCurrency(c.reward_amount as number)}</span>}
+                {c.rewardAmount && <span className="ml-1">&bull; {formatCurrency(c.rewardAmount)}</span>}
               </div>
             )}
           </div>
@@ -70,30 +70,30 @@ export default function CriminalProfilePage() {
           <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
             <div className="flex justify-between">
               <span className="text-slate-400">Age / Gender:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{(c.age as number) ?? 'N/A'} / {c.gender as string}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{c.age ?? 'N/A'} / {c.gender}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Risk Rating:</span>
-              <span className={`font-bold capitalize ${getRiskBadgeClass(c.risk_level as string)}`}>
-                {c.risk_level as string} ({c.risk_score as number}/100)
+              <span className={`font-bold capitalize ${getRiskBadgeClass(c.riskLevel)}`}>
+                {c.riskLevel} ({c.riskScore}/100)
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Nationality:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{c.nationality as string}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{c.nationality}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Total Cases:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{c.total_cases as number ?? 0}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{c.totalCases ?? 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Convictions:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{c.total_convictions as number ?? 0}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{c.totalConvictions ?? 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Status:</span>
               <span className="font-bold text-slate-800 dark:text-slate-200">
-                {c.is_arrested ? 'Arrested' : c.is_absconding ? 'Absconding' : 'Active'}
+                {c.isArrested ? 'Arrested' : c.isAbsconding ? 'Absconding' : 'Active'}
               </span>
             </div>
           </div>
@@ -102,10 +102,10 @@ export default function CriminalProfilePage() {
         {/* Right Details Grid */}
         <div className="lg:col-span-2 space-y-6">
           {/* Modus Operandi */}
-          {c.modus_operandi && (
+          {c.modusOperandi && (
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Modus Operandi & Pattern Analysis</h3>
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{c.modus_operandi as string}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{c.modusOperandi}</p>
               {specs.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {specs.map((s, idx) => (
