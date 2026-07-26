@@ -1,0 +1,318 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 94%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217 91% 60%;
+    --radius: 0.75rem;
+
+    /* KSP Custom */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 72px;
+    --topbar-height: 64px;
+    --ksp-primary: #1d4ed8;
+    --ksp-primary-dark: #1e3a8a;
+    --ksp-accent: #3b82f6;
+    --ksp-gold: #f59e0b;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
+
+@layer components {
+  /* ─── KSP Card ──────────────────────────────────────────────────────────── */
+  .ksp-card {
+    @apply bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800
+           shadow-soft hover:shadow-card transition-all duration-300;
+  }
+
+  .ksp-card-glass {
+    @apply rounded-2xl border border-white/20 backdrop-blur-xl shadow-soft;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* ─── Stat Card ─────────────────────────────────────────────────────────── */
+  .stat-card {
+    @apply ksp-card p-6 relative overflow-hidden group cursor-default;
+  }
+
+  .stat-card::before {
+    content: '';
+    @apply absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(29, 78, 216, 0.02) 100%);
+  }
+
+  /* ─── Sidebar ───────────────────────────────────────────────────────────── */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium
+           text-gray-600 dark:text-gray-400 transition-all duration-200
+           hover:bg-ksp-50 hover:text-ksp-700 dark:hover:bg-ksp-900/30 dark:hover:text-ksp-300
+           cursor-pointer;
+  }
+
+  .sidebar-item.active {
+    @apply bg-ksp-600 text-white shadow-glow;
+  }
+
+  .sidebar-item.active:hover {
+    @apply bg-ksp-700;
+  }
+
+  /* ─── Badge ─────────────────────────────────────────────────────────────── */
+  .badge-risk-low {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+           bg-success-50 text-success-600;
+  }
+  .badge-risk-medium {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+           bg-warning-50 text-warning-600;
+  }
+  .badge-risk-high {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+           bg-orange-50 text-orange-600;
+  }
+  .badge-risk-critical {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+           bg-danger-50 text-danger-600;
+  }
+
+  /* ─── Table ─────────────────────────────────────────────────────────────── */
+  .ksp-table {
+    @apply w-full text-sm;
+  }
+  .ksp-table thead {
+    @apply bg-gray-50 dark:bg-gray-800/50;
+  }
+  .ksp-table thead th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400
+           uppercase tracking-wider border-b border-gray-100 dark:border-gray-700;
+  }
+  .ksp-table tbody tr {
+    @apply border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30
+           transition-colors duration-150;
+  }
+  .ksp-table tbody td {
+    @apply px-4 py-3 text-gray-700 dark:text-gray-300;
+  }
+
+  /* ─── Input ─────────────────────────────────────────────────────────────── */
+  .ksp-input {
+    @apply flex h-11 w-full rounded-xl border border-gray-200 dark:border-gray-700
+           bg-white dark:bg-gray-900 px-4 py-2 text-sm
+           placeholder:text-gray-400 dark:placeholder:text-gray-500
+           focus:outline-none focus:ring-2 focus:ring-ksp-500 focus:border-ksp-500
+           disabled:cursor-not-allowed disabled:opacity-50
+           transition-all duration-200;
+  }
+
+  /* ─── Button ─────────────────────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl
+           bg-ksp-600 hover:bg-ksp-700 active:bg-ksp-800
+           text-white text-sm font-semibold
+           shadow-md hover:shadow-glow
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-ksp-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl
+           border border-gray-200 dark:border-gray-700
+           bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800
+           text-gray-700 dark:text-gray-300 text-sm font-semibold
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-gray-300;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl
+           text-gray-600 dark:text-gray-400 text-sm font-medium
+           hover:bg-gray-100 dark:hover:bg-gray-800
+           transition-all duration-200;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl
+           bg-danger-600 hover:bg-danger-700 text-white text-sm font-semibold
+           transition-all duration-200;
+  }
+
+  /* ─── Chat Bubble ────────────────────────────────────────────────────────── */
+  .chat-bubble-user {
+    @apply max-w-[75%] ml-auto px-5 py-3 rounded-2xl rounded-br-sm
+           bg-ksp-600 text-white text-sm leading-relaxed;
+  }
+  .chat-bubble-ai {
+    @apply max-w-[85%] px-5 py-4 rounded-2xl rounded-bl-sm
+           bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700
+           text-gray-800 dark:text-gray-200 text-sm leading-relaxed shadow-soft;
+  }
+
+  /* ─── Gradient Text ──────────────────────────────────────────────────────── */
+  .gradient-text {
+    @apply bg-gradient-to-r from-ksp-600 to-ksp-400 bg-clip-text text-transparent;
+  }
+
+  /* ─── Shimmer Loading ────────────────────────────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  .dark .shimmer {
+    background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+    background-size: 200% 100%;
+  }
+
+  /* ─── Typing Indicator ───────────────────────────────────────────────────── */
+  .typing-dot {
+    @apply w-2 h-2 rounded-full bg-ksp-400;
+    animation: typing 1.2s steps(1) infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.4s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.8s; }
+
+  /* ─── Status Badges ──────────────────────────────────────────────────────── */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold;
+  }
+  .status-badge::before {
+    content: '';
+    @apply w-1.5 h-1.5 rounded-full;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Glass effect */
+  .glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.75);
+  }
+  .dark .glass {
+    background-color: rgba(17, 24, 39, 0.75);
+  }
+
+  /* Sidebar transition */
+  .sidebar-transition {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* ─── Markdown content styles ──────────────────────────────────────────────── */
+.prose-ksp {
+  @apply text-gray-800 dark:text-gray-200 leading-relaxed;
+}
+.prose-ksp h1, .prose-ksp h2, .prose-ksp h3 {
+  @apply font-bold text-gray-900 dark:text-white mt-4 mb-2;
+}
+.prose-ksp p { @apply mb-3; }
+.prose-ksp ul, .prose-ksp ol { @apply pl-5 mb-3; }
+.prose-ksp li { @apply mb-1; }
+.prose-ksp ul { @apply list-disc; }
+.prose-ksp ol { @apply list-decimal; }
+.prose-ksp code {
+  @apply bg-gray-100 dark:bg-gray-800 text-ksp-600 dark:text-ksp-400
+         px-1.5 py-0.5 rounded text-xs font-mono;
+}
+.prose-ksp pre {
+  @apply bg-gray-900 dark:bg-black text-gray-100 p-4 rounded-xl overflow-auto mb-4 text-xs;
+}
+.prose-ksp pre code {
+  @apply bg-transparent text-gray-100 p-0;
+}
+.prose-ksp table {
+  @apply w-full border-collapse mb-4 text-sm;
+}
+.prose-ksp th, .prose-ksp td {
+  @apply border border-gray-200 dark:border-gray-700 px-3 py-2 text-left;
+}
+.prose-ksp th {
+  @apply bg-gray-50 dark:bg-gray-800 font-semibold;
+}
+.prose-ksp blockquote {
+  @apply border-l-4 border-ksp-400 pl-4 italic text-gray-600 dark:text-gray-400 mb-3;
+}
+.prose-ksp strong { @apply font-semibold text-gray-900 dark:text-white; }
+.prose-ksp a { @apply text-ksp-600 dark:text-ksp-400 underline; }

@@ -1,0 +1,6 @@
+{
+  "execution": {
+    "main": "index.js",
+    "type": "Express"
+  }
+}

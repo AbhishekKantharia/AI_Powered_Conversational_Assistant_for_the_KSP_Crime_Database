@@ -1,0 +1,27 @@
+{
+  "project": {
+    "name": "CrimeAssist-AI-KSP",
+    "id": "100582910"
+  },
+  "functions": {
+    "targets": [
+      "auth-function",
+      "ai-function",
+      "report-function",
+      "cron-function"
+    ]
+  },
+  "hosting": {
+    "target": "frontend/dist"
+  },
+  "datastore": {
+    "tables": [
+      "users",
+      "fir",
+      "cases",
+      "criminals",
+      "evidence",
+      "audit_logs"
+    ]
+  }
+}
