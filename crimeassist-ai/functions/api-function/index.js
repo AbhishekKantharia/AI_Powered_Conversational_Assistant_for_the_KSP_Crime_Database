@@ -5,7 +5,7 @@ try {
   require('dotenv').config({ path: path.join(__dirname, '.env') });
 } catch(e) {}
 
-// Import the Express app from the compiled Catalyst entry point
-const app = require('./catalyst');
+// Import the Express app from the bundled entry point (all deps included)
+const app = require('./catalyst.bundle');
 
 module.exports = app;
