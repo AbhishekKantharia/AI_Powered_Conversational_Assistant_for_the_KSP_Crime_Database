@@ -10,7 +10,7 @@
     ]
   },
   "client": {
-    "directory": "frontend/dist",
+    "source": "frontend/dist",
     "type": "web"
   }
 }
