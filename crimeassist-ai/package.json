@@ -1,0 +1,18 @@
+{
+  "name": "crimeassist-ai",
+  "version": "1.0.0",
+  "description": "AI-Powered Conversational Crime Investigation System for Karnataka State Police",
+  "private": true,
+  "workspaces": ["frontend", "backend", "functions/*"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "test": "npm run test --workspaces",
+    "db:migrate": "npm run migrate --workspace=backend",
+    "db:seed": "npm run seed --workspace=backend",
+    "deploy": "catalyst deploy"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://catalyst.zoho.com/schemas/catalyst-config.json",
+  "functions": {
+    "directory": "functions",
+    "targets": [
+      "auth-function",
+      "ai-function",
+      "report-function",
+      "cron-function",
+      "api-function"
+    ]
+  },
+  "client": {
+    "source": "frontend/dist",
+    "type": "web"
+  }
+}

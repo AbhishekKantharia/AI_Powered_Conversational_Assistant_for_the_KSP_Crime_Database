@@ -1,0 +1,75 @@
+{
+  "project": {
+    "name": "CrimeAssist-AI-KSP",
+    "id": "100582910"
+  },
+  "functions": {
+    "targets": [
+      "auth-function",
+      "ai-function",
+      "report-function",
+      "cron-function"
+    ]
+  },
+  "hosting": {
+    "target": "frontend/dist"
+  },
+  "datastore": {
+    "tables": [
+      "districts",
+      "police_stations",
+      "users",
+      "fir",
+      "cases",
+      "criminals",
+      "victims",
+      "suspects",
+      "evidence",
+      "documents",
+      "case_notes",
+      "audit_logs",
+      "chat_sessions",
+      "chat_messages",
+      "document_embeddings",
+      "reports",
+      "analytics_snapshots"
+    ]
+  },
+  "cron": {
+    "schedules": [
+      {
+        "function": "cron-function",
+        "cron_expression": "0 2 1 * *",
+        "payload": {
+          "snapshot_type": "monthly_analytics"
+        },
+        "description": "Generate monthly analytics snapshot"
+      },
+      {
+        "function": "cron-function",
+        "cron_expression": "0 3 * * 0",
+        "payload": {
+          "snapshot_type": "risk_recalculation"
+        },
+        "description": "Weekly criminal risk score recalculation"
+      }
+    ]
+  },
+  "filestore": {
+    "bucket": "crimeassist-files",
+    "paths": [
+      "/evidence/*",
+      "/reports/*",
+      "/documents/*",
+      "/avatars/*"
+    ]
+  },
+  "search": {
+    "indices": [
+      "fir",
+      "cases",
+      "criminals",
+      "documents"
+    ]
+  }
+}

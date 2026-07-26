@@ -1,0 +1,9 @@
+{
+  "name": "cron-function",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "zcatalyst-sdk-node": "^2.5.0",
+    "pg": "^8.11.3"
+  }
+}
