@@ -128,7 +128,7 @@ export default function LoginPage() {
           <p className="font-semibold text-slate-300 flex items-center">
             <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 mr-1.5" /> Demo Officer Credentials:
           </p>
-          <p>Username: <code className="text-blue-400">officer_ksp</code> | Password: <code className="text-blue-400">password123</code></p>
+          <p>Username: <code className="text-blue-400">admin</code> | Password: <code className="text-blue-400">password</code></p>
         </div>
       </div>
     </div>
