@@ -34,7 +34,7 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers['X-Auth-Token'] = token
     }
     return config
   },
@@ -62,7 +62,7 @@ apiClient.interceptors.response.use(
           return new Promise((resolve) => {
             refreshQueue.push((token) => {
               if (originalRequest?.headers) {
-                originalRequest.headers.Authorization = `Bearer ${token}`
+                originalRequest.headers['X-Auth-Token'] = token
               }
               resolve(apiClient(originalRequest!))
             })
@@ -85,7 +85,7 @@ apiClient.interceptors.response.use(
           refreshQueue = []
 
           if (originalRequest?.headers) {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`
+            originalRequest.headers['X-Auth-Token'] = accessToken
           }
 
           return apiClient(originalRequest!)
