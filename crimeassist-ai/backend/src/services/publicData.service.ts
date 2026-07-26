@@ -187,7 +187,7 @@ export async function fetchKarnatakaCrimeStats(): Promise<NCRBDistrictSummary[]>
           drugOffense: Number(d.drug_offense || 0),
         }))
         ncrbCacheTime = Date.now()
-        return ncrbCache
+        return ncrbCache!
       }
     }
   } catch {}
