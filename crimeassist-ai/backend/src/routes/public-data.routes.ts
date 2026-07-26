@@ -8,6 +8,7 @@ import {
   getIPCSectionByNumber,
   fetchKarnatakaCrimeStats,
   getKarnatakaDistricts,
+  fetchPoliceStations,
 } from '../services/publicData.service'
 import { logger } from '../utils/logger'
 
@@ -70,11 +71,22 @@ router.get('/karnataka-crime-stats', requirePermission('analytics:read'), async 
 // ─── GET /public-data/karnataka-districts ──────────────────────────────────────
 router.get('/karnataka-districts', requirePermission('analytics:read'), async (_req, res) => {
   try {
-    const districts = getKarnatakaDistricts()
+    const districts = await getKarnatakaDistricts()
     res.json({ success: true, data: districts, count: districts.length })
   } catch (error) {
     logger.error('Failed to fetch districts:', error)
     res.status(500).json({ success: false, error: 'Failed to fetch districts' })
+  }
+})
+
+// ─── GET /public-data/police-stations ──────────────────────────────────────────
+router.get('/police-stations', requirePermission('analytics:read'), async (_req, res) => {
+  try {
+    const stations = await fetchPoliceStations()
+    res.json({ success: true, data: stations, count: stations.length })
+  } catch (error) {
+    logger.error('Failed to fetch police stations:', error)
+    res.status(500).json({ success: false, error: 'Failed to fetch police stations' })
   }
 })
 
@@ -83,16 +95,13 @@ router.get('/ncrb-summary', requirePermission('analytics:read'), async (_req, re
   try {
     const stats = await fetchKarnatakaCrimeStats()
     const totalCrime = stats.reduce((sum, d) => sum + d.totalCrime, 0)
-    const byCategory = {
-      murder: stats.reduce((s, d) => s + d.murder, 0),
-      robbery: stats.reduce((s, d) => s + d.robbery, 0),
-      theft: stats.reduce((s, d) => s + d.theft, 0),
-      burglary: stats.reduce((s, d) => s + d.burglary, 0),
-      cybercrime: stats.reduce((s, d) => s + d.cybercrime, 0),
-      fraud: stats.reduce((s, d) => s + d.fraud, 0),
-      assault: stats.reduce((s, d) => s + d.assault, 0),
-      kidnapping: stats.reduce((s, d) => s + d.kidnapping, 0),
-      drugOffense: stats.reduce((s, d) => s + d.drugOffense, 0),
+    const byCategory: Record<string, number> = {}
+    for (const s of stats) {
+      for (const [key, val] of Object.entries(s)) {
+        if (key !== 'district' && key !== 'totalCrime' && typeof val === 'number') {
+          byCategory[key] = (byCategory[key] || 0) + val
+        }
+      }
     }
     const topDistricts = [...stats].sort((a, b) => b.totalCrime - a.totalCrime).slice(0, 5)
 
