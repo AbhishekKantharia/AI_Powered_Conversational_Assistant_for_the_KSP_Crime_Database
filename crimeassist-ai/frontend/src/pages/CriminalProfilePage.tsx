@@ -119,16 +119,16 @@ export default function CriminalProfilePage() {
           )}
 
           {/* Last Known Location */}
-          {(c.last_known_location || c.address) && (
+          {(c.lastKnownLocation || c.address) && (
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center">
                 <MapPin className="w-4 h-4 mr-1 text-rose-500" /> Last Known Location
               </h3>
-              {c.last_known_location && (
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{c.last_known_location as string}</p>
+              {c.lastKnownLocation && (
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{c.lastKnownLocation}</p>
               )}
               {c.address && (
-                <p className="text-[11px] text-slate-400">Address: {c.address as string}</p>
+                <p className="text-[11px] text-slate-400">Address: {c.address}</p>
               )}
             </div>
           )}
@@ -141,11 +141,11 @@ export default function CriminalProfilePage() {
                 {cases.map((caseItem, idx) => (
                   <div key={idx} className="flex justify-between items-center p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
                     <div>
-                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{caseItem.case_number as string}</span>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">{caseItem.title as string}</p>
-                      <p className="text-[10px] text-slate-400 capitalize">{(caseItem.crime_category as string)?.replace(/_/g, ' ')}</p>
+                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{caseItem.caseNumber}</span>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">{caseItem.title}</p>
+                      <p className="text-[10px] text-slate-400 capitalize">{caseItem.crimeCategory?.replace(/_/g, ' ')}</p>
                     </div>
-                    <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 font-semibold rounded-full">{caseItem.role_in_crime as string ?? 'Suspect'}</span>
+                    <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 font-semibold rounded-full">{caseItem.roleInCrime ?? 'Suspect'}</span>
                   </div>
                 ))}
               </div>
@@ -153,12 +153,12 @@ export default function CriminalProfilePage() {
           )}
 
           {/* AI Profile Summary */}
-          {c.ai_profile_summary && (
+          {c.aiProfileSummary && (
             <div className="bg-gradient-to-r from-blue-900/10 via-indigo-900/10 to-blue-900/10 p-5 rounded-2xl border border-blue-500/20 space-y-3">
               <div className="flex items-center space-x-2 text-blue-500 font-bold text-xs uppercase tracking-wider">
                 <span>AI Profile Summary</span>
               </div>
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{c.ai_profile_summary as string}</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{String(c.aiProfileSummary)}</p>
             </div>
           )}
         </div>
