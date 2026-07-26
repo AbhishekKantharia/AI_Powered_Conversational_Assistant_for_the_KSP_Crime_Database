@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useFIRList } from '../hooks/useAPI'
 import { downloadCSV, getStatusColor, formatDate } from '../lib/utils'
+import type { FIR } from '../types'
 
 export default function FIRSearchPage() {
   const navigate = useNavigate()
@@ -36,12 +37,12 @@ export default function FIRSearchPage() {
 
   const handleExportCSV = () => {
     if (!firList.length) return
-    const exportData = firList.map((f: Record<string, unknown>) => ({
-      'FIR Number': (f as { fir_number: string }).fir_number,
-      'Complainant': (f as { complainant_name: string }).complainant_name,
-      'Date': (f as { incident_date: string }).incident_date,
-      'Category': (f as { crime_category: string }).crime_category,
-      'Status': (f as { status: string }).status,
+    const exportData = firList.map((f: FIR) => ({
+      'FIR Number': f.firNumber,
+      'Complainant': f.complainantName,
+      'Date': f.incidentDate,
+      'Category': f.crimeCategory,
+      'Status': f.status,
     }))
     downloadCSV(exportData, `KSP-FIR-Export-${Date.now()}.csv`)
   }

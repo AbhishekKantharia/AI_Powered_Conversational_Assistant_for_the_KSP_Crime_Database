@@ -146,7 +146,7 @@ router.post('/', requirePermission('criminals:create'), validate(CreateCriminalS
     userId: req.user!.userId,
     action: 'CREATE_CRIMINAL',
     resourceType: 'criminals',
-    resourceId: result.rows[0].id,
+    resourceId: result.rows[0].id as string,
     newValues: req.body,
     ipAddress: req.ip,
     status: 'success',

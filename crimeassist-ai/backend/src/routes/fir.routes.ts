@@ -146,7 +146,7 @@ router.post('/', requirePermission('fir:create'), validate(CreateFIRSchema), asy
     userId: req.user!.userId,
     action: 'CREATE_FIR',
     resourceType: 'fir',
-    resourceId: result.rows[0].id,
+    resourceId: result.rows[0].id as string,
     newValues: req.body,
     ipAddress: req.ip,
     status: 'success',

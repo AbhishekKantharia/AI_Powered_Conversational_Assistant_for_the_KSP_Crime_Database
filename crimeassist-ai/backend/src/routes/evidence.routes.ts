@@ -83,7 +83,7 @@ router.post('/', requirePermission('evidence:create'), upload.single('file'), as
     userId: req.user!.userId,
     action: 'CREATE_EVIDENCE',
     resourceType: 'evidence',
-    resourceId: result.rows[0].id,
+    resourceId: result.rows[0].id as string,
     ipAddress: req.ip,
     status: 'success',
   })
