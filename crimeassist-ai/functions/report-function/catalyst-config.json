@@ -1,14 +1,11 @@
 {
-  "runtime": {
-    "edition": "Node.js",
-    "version": "18.15"
-  },
-  "functions": [
-    {
-      "path": "./index.js",
-      "method": "POST",
-      "auth": true,
-      "streaming": false
-    }
-  ]
+	"deployment": {
+		"name": "report-function",
+		"stack": "node18",
+		"type": "basicio",
+		"env_variables": {}
+	},
+	"execution": {
+		"main": "index.js"
+	}
 }

@@ -1,14 +1,11 @@
 {
-  "runtime": {
-    "edition": "Node.js",
-    "version": "18.15"
-  },
-  "functions": [
-    {
-      "path": "./index.js",
-      "method": "POST",
-      "auth": false,
-      "streaming": false
-    }
-  ]
+	"deployment": {
+		"name": "cron-function",
+		"stack": "node18",
+		"type": "cron",
+		"env_variables": {}
+	},
+	"execution": {
+		"main": "index.js"
+	}
 }
