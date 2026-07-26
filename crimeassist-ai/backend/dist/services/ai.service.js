@@ -366,7 +366,7 @@ async function semanticSearch(query_text, filters = {}) {
             params.push(filters.sourceType);
         }
         sql += ` LIMIT $${params.length + 1}`;
-        params.push(filters.limit || 10);
+        params.push(String(filters.limit || 10));
         const results = await (0, database_service_1.query)(sql, params);
         return results.rows.map((r, idx) => ({
             source: r.source_type,

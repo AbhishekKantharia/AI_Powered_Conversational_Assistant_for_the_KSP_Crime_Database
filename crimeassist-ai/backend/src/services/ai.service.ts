@@ -461,7 +461,7 @@ export async function semanticSearch(
     }
 
     sql += ` LIMIT $${params.length + 1}`
-    params.push(filters.limit || 10)
+    params.push(String(filters.limit || 10))
 
     const results = await query<{
       chunk_text: string; source_type: string; source_id: string; metadata: Record<string, unknown>
