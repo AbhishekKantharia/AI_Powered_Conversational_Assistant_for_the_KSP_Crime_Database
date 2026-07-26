@@ -271,33 +271,3 @@ export default function AIChatPage() {
     </div>
   )
 }
-
-function generateMockAIAnswer(query: string): string {
-  if (query.toLowerCase().includes('fraud') || query.toLowerCase().includes('ipc')) {
-    return `### Applicable Legal Provisions & Analysis
-
-1. **IPC Section 420 (Cheating & Dishonestly Inducing Delivery of Property)**:
-   - **Penalty**: Imprisonment up to 7 years + Fine.
-   - **Cognizable & Non-Bailable**.
-
-2. **IT Act, 2000 - Section 66D**:
-   - Punishment for cheating by personation using computer resources.
-   - **Penalty**: Imprisonment up to 3 years + Fine up to ₹1 Lakh.
-
-#### Recommended Investigation Checklist:
-- Request CDR & IPDR from telecom provider.
-- Freeze target bank account via 1930 Cyber Fraud Helpline portal.
-- Issue 91 CrPC notice to bank nodal officers.`
-  }
-
-  return `### Investigation Assessment & KSP Analysis
-
-Based on KSP intelligence records and vector search matching:
-
-- **Modus Operandi**: Matches active organized crime groups operating in suburban corridors.
-- **Risk Score**: High priority for immediate field intervention.
-- **Next Steps**:
-  1. Cross-reference suspect phone IMEI with tower dumps.
-  2. Coordinate with Central Crime Branch (CCB) intelligence desk.
-  3. Upload evidence logs to the Crime & Criminal Tracking Network Systems (CCTNS).`
-}

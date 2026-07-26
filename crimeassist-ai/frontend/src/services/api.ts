@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 import { useAuthStore } from '../stores/authStore'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://project-rainfall-60072881979.development.catalystserverless.in/server/api-function/execute'
 
 function toCamelCase(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
