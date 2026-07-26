@@ -220,7 +220,7 @@ export async function chat(
       const contexts = await retrieveContext(lastUserMessage.content)
       sources = contexts.map((c) => ({
         source: c.source,
-        sourceId: cSourceId,
+        sourceId: c.sourceId,
         similarity: c.similarity,
       }))
 
