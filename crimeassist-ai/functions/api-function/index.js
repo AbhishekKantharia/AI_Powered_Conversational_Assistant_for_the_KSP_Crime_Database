@@ -7,6 +7,6 @@ process.chdir(path.join(__dirname, 'backend'));
 try { require('dotenv').config(); } catch(e) {}
 
 // Import the Express app from the compiled Catalyst entry point
-const app = require('./backend/src/catalyst');
+const app = require('./backend/catalyst');
 
 module.exports = app;
