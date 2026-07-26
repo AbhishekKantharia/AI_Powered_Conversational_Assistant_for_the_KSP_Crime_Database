@@ -11,6 +11,7 @@ import reportsRouter from './reports.routes'
 import usersRouter from './users.routes'
 import settingsRouter from './settings.routes'
 import evidenceRouter from './evidence.routes'
+import publicDataRouter from './public-data.routes'
 
 export function setupRoutes(app: Application): void {
   setupRateLimiters()
@@ -27,6 +28,7 @@ export function setupRoutes(app: Application): void {
   app.use(`${API_PREFIX}/users`, usersRouter)
   app.use(`${API_PREFIX}/settings`, settingsRouter)
   app.use(`${API_PREFIX}/evidence`, evidenceRouter)
+  app.use(`${API_PREFIX}/public-data`, publicDataRouter)
 
   // Also support /api prefix (no version)
   app.use('/api/auth', authRouter)
@@ -39,4 +41,5 @@ export function setupRoutes(app: Application): void {
   app.use('/api/users', usersRouter)
   app.use('/api/settings', settingsRouter)
   app.use('/api/evidence', evidenceRouter)
+  app.use('/api/public-data', publicDataRouter)
 }

@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { query, globalVectorSearch, withTransaction } from './database.service'
 import { logger } from '../utils/logger'
+import { fetchIPCSections, fetchKarnatakaCrimeStats, searchIPCSections } from './publicData.service'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -117,11 +118,34 @@ async function retrieveContext(
 }
 
 // ─── Build RAG Prompt ─────────────────────────────────────────────────────────
-function buildRAGPrompt(
+async function buildRAGPrompt(
   userQuery: string,
   contexts: Array<{ text: string; source: string; sourceId: string; similarity: number }>
-): string {
-  if (contexts.length === 0) {
+): Promise<string> {
+  // Enrich with real IPC sections from public API
+  let ipcContext = ''
+  try {
+    const ipcResults = await searchIPCSections(userQuery)
+    if (ipcResults.length > 0) {
+      ipcContext = '\n\nRELEVANT IPC SECTIONS (from Indian Penal Code):\n' +
+        ipcResults.slice(0, 5).map((s) =>
+          `Section ${s.section}: ${s.title}\n${s.description}\nPunishment: ${s.punishment || 'N/A'}`
+        ).join('\n\n')
+    }
+  } catch {}
+
+  // Enrich with NCRB Karnataka crime statistics
+  let ncrbContext = ''
+  try {
+    const stats = await fetchKarnatakaCrimeStats()
+    if (stats.length > 0) {
+      const totalCrime = stats.reduce((sum, d) => sum + d.totalCrime, 0)
+      const top5 = [...stats].sort((a, b) => b.totalCrime - a.totalCrime).slice(0, 5)
+      ncrbContext = `\n\nNCRB KARNATAKA CRIME STATISTICS:\nTotal reported crimes in Karnataka: ${totalCrime.toLocaleString()}\nTop 5 districts by crime volume:\n${top5.map((d) => `${d.district}: ${d.totalCrime.toLocaleString()}`).join('\n')}`
+    }
+  } catch {}
+
+  if (contexts.length === 0 && !ipcContext) {
     return userQuery
   }
 
@@ -129,14 +153,20 @@ function buildRAGPrompt(
     .map((c, i) => `[Context ${i + 1} | Source: ${c.source} | Relevance: ${(c.similarity * 100).toFixed(0)}%]\n${c.text}`)
     .join('\n\n')
 
-  return `Based on the following retrieved information from the KSP database, answer the question.
+  let prompt = ''
+  if (contextText) {
+    prompt += `RETRIEVED CONTEXT:\n${contextText}\n\n`
+  }
+  if (ipcContext) {
+    prompt += ipcContext
+  }
+  if (ncrbContext) {
+    prompt += ncrbContext
+  }
+  prompt += `\nUSER QUESTION: ${userQuery}`
+  prompt += `\n\nPlease provide a comprehensive answer based on the context, relevant IPC sections, and NCRB statistics. If the context doesn't fully address the question, supplement with your general knowledge about Indian police procedures and criminal law.`
 
-RETRIEVED CONTEXT:
-${contextText}
-
-USER QUESTION: ${userQuery}
-
-Please provide a comprehensive answer based on the context. If the context doesn't fully address the question, supplement with your general knowledge about Indian police procedures and criminal law.`
+  return prompt
 }
 
 // ─── Main Chat Function ───────────────────────────────────────────────────────
@@ -176,9 +206,10 @@ export async function chat(
 
       if (contexts.length > 0) {
         // Replace the last user message with RAG-augmented version
+        const augmentedPrompt = await buildRAGPrompt(lastUserMessage.content, contexts)
         augmentedMessages = [
           ...messages.slice(0, -1),
-          { role: 'user', content: buildRAGPrompt(lastUserMessage.content, contexts) },
+          { role: 'user', content: augmentedPrompt },
         ]
       }
     } catch (err) {
@@ -226,9 +257,10 @@ export async function chatStream(
       const contexts = await retrieveContext(lastUserMessage.content, 6)
       sources = contexts.map((c) => ({ source: c.source, sourceId: c.sourceId, similarity: c.similarity }))
       if (contexts.length > 0) {
+        const augmentedPrompt = await buildRAGPrompt(lastUserMessage.content, contexts)
         augmentedMessages = [
           ...messages.slice(0, -1),
-          { role: 'user', content: buildRAGPrompt(lastUserMessage.content, contexts) },
+          { role: 'user', content: augmentedPrompt },
         ]
       }
     } catch {}

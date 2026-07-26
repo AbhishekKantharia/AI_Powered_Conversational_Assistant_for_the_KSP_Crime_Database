@@ -338,3 +338,99 @@ export function useAuditLogs(filters?: Record<string, unknown>) {
     },
   })
 }
+
+// ─── Public Data Hooks (NCRB, IPC, Geography) ────────────────────────────────
+export interface IPCSection {
+  section: string
+  title: string
+  description: string
+  punishment?: string
+  category?: string
+}
+
+export interface NCRBDistrictSummary {
+  district: string
+  totalCrime: number
+  murder: number
+  robbery: number
+  theft: number
+  burglary: number
+  cybercrime: number
+  fraud: number
+  assault: number
+  kidnapping: number
+  drugOffense: number
+}
+
+export interface KarnatakaDistrictPublic {
+  name: string
+  code: string
+  lat: number
+  lng: number
+  population: number
+  areaSqKm: number
+  headquarters: string
+  division: string
+}
+
+export function useIPCSections() {
+  return useQuery({
+    queryKey: ['public-data', 'ipc-sections'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<IPCSection[]>>('/public-data/ipc-sections')
+      return data.data
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour cache
+  })
+}
+
+export function useIPCSearch(query_text: string) {
+  return useQuery({
+    queryKey: ['public-data', 'ipc-search', query_text],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<IPCSection[]>>(`/public-data/ipc-search`, { params: { q: query_text } })
+      return data.data
+    },
+    enabled: query_text.length >= 1,
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+export function useKarnatakaCrimeStats() {
+  return useQuery({
+    queryKey: ['public-data', 'karnataka-crime-stats'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<NCRBDistrictSummary[]>>('/public-data/karnataka-crime-stats')
+      return data.data
+    },
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+export function useNCRBSummary() {
+  return useQuery({
+    queryKey: ['public-data', 'ncrb-summary'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<{
+        totalCrime: number
+        districts: number
+        byCategory: Record<string, number>
+        topDistricts: NCRBDistrictSummary[]
+        source: string
+      }>>('/public-data/ncrb-summary')
+      return data.data
+    },
+    staleTime: 60 * 60 * 1000,
+  })
+}
+
+export function useKarnatakaDistrictsPublic() {
+  return useQuery({
+    queryKey: ['public-data', 'karnataka-districts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<KarnatakaDistrictPublic[]>>('/public-data/karnataka-districts')
+      return data.data
+    },
+    staleTime: 60 * 60 * 1000,
+  })
+}

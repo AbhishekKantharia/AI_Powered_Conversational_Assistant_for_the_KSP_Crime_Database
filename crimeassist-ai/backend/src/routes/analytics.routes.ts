@@ -4,6 +4,7 @@ import { requirePermission } from '../middleware/rbac.middleware'
 import { rateLimitGeneral } from '../middleware/rateLimit.middleware'
 import { validate } from '../middleware/validation.middleware'
 import { query } from '../services/database.service'
+import { fetchKarnatakaCrimeStats } from '../services/publicData.service'
 import { z } from 'zod'
 
 const router = Router()
@@ -17,7 +18,7 @@ const AnalyticsQuerySchema = z.object({
 
 // ─── GET /analytics/dashboard ─────────────────────────────────────────────────
 router.get('/dashboard', requirePermission('analytics:read'), async (req, res) => {
-  const [stats, recentCases, topDistricts, crimeByCategory, monthlyTrend] = await Promise.all([
+  const [stats, recentCases, topDistricts, crimeByCategory, monthlyTrend, ncrbData] = await Promise.all([
     // Dashboard stats
     query(`SELECT * FROM v_dashboard_stats LIMIT 1`),
 
@@ -64,16 +65,35 @@ router.get('/dashboard', requirePermission('analytics:read'), async (req, res) =
        GROUP BY DATE_TRUNC('month', incident_date)
        ORDER BY month_date ASC`
     ),
+
+    // NCRB public data for Karnataka (background enrichment)
+    fetchKarnatakaCrimeStats().catch(() => []),
   ])
+
+  // Merge NCRB reference data into topDistricts if database has sparse data
+  const dbDistricts = topDistricts.rows
+  let enrichedTopDistricts = dbDistricts
+  if (Array.isArray(ncrbData) && ncrbData.length > 0 && dbDistricts.length < 5) {
+    const ncrbDistricts = ncrbData
+      .sort((a, b) => b.totalCrime - a.totalCrime)
+      .slice(0, 10)
+      .map((d) => ({ district: d.district, crime_count: d.totalCrime, source: 'NCRB' }))
+    enrichedTopDistricts = [...dbDistricts, ...ncrbDistricts].slice(0, 10)
+  }
 
   res.json({
     success: true,
     data: {
       stats: stats.rows[0] || {},
       recentCases: recentCases.rows,
-      topDistricts: topDistricts.rows,
+      topDistricts: enrichedTopDistricts,
       crimeByCategory: crimeByCategory.rows,
       monthlyTrend: monthlyTrend.rows,
+      ncrbSummary: Array.isArray(ncrbData) && ncrbData.length > 0 ? {
+        totalCrime: ncrbData.reduce((sum: number, d: { totalCrime: number }) => sum + d.totalCrime, 0),
+        districts: ncrbData.length,
+        source: 'NCRB Crime in India',
+      } : null,
     },
   })
 })
