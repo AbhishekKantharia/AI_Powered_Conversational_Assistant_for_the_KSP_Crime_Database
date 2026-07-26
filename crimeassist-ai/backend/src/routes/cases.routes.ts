@@ -8,6 +8,7 @@ import { query, buildPagination, buildPaginatedResponse } from '../services/data
 import { AppError } from '../middleware/error.middleware'
 import { writeAuditLog } from '../middleware/audit.middleware'
 import { aiService } from '../services/ai.service'
+import { isTableEmpty, getPublicCases, getPublicCaseById } from '../services/publicSeedData.service'
 
 const router = Router()
 
@@ -109,6 +110,13 @@ router.get('/', requirePermission('cases:read'), validate(CaseFilterSchema, 'que
   ])
 
   const total = parseInt((countResult.rows[0] as { count: string }).count)
+
+  // Fallback to public data when DB is empty
+  if (total === 0) {
+    const pubResult = await getPublicCases({ search, status, crimeCategory, page, limit })
+    return res.json({ success: true, ...pubResult })
+  }
+
   res.json({
     success: true,
     ...buildPaginatedResponse(dataResult.rows, total, page, limit),
@@ -146,7 +154,12 @@ router.get('/:id', requirePermission('cases:read'), validate(UUIDSchema, 'params
            WHERE cn.case_id = $1 ORDER BY cn.created_at DESC`, [id]),
   ])
 
-  if (caseResult.rowCount === 0) throw new AppError('Case not found', 404, 'NOT_FOUND')
+  if (caseResult.rowCount === 0) {
+    // Fallback to public data
+    const pubCase = getPublicCaseById(id)
+    if (pubCase) return res.json({ success: true, data: pubCase })
+    throw new AppError('Case not found', 404, 'NOT_FOUND')
+  }
 
   res.json({
     success: true,

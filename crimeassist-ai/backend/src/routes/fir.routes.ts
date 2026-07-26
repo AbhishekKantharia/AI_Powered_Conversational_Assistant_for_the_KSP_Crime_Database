@@ -7,6 +7,7 @@ import { validate, PaginationSchema, UUIDSchema } from '../middleware/validation
 import { query, buildPagination, buildPaginatedResponse } from '../services/database.service'
 import { AppError } from '../middleware/error.middleware'
 import { writeAuditLog } from '../middleware/audit.middleware'
+import { isTableEmpty, getPublicFIRs, getPublicFIRById } from '../services/publicSeedData.service'
 
 const router = Router()
 router.use(authenticate, rateLimitGeneral)
@@ -94,6 +95,13 @@ router.get('/', requirePermission('fir:read'), validate(FIRFilterSchema, 'query'
   ])
 
   const total = parseInt((count.rows[0] as { count: string }).count)
+
+  // Fallback to public data when DB is empty
+  if (total === 0) {
+    const pubResult = await getPublicFIRs({ search, crimeCategory, status, page, limit })
+    return res.json({ success: true, ...pubResult })
+  }
+
   res.json({ success: true, ...buildPaginatedResponse(rows.rows, total, page, limit) })
 })
 
@@ -111,7 +119,12 @@ router.get('/:id', requirePermission('fir:read'), validate(UUIDSchema, 'params')
      WHERE f.id = $1`,
     [req.params.id]
   )
-  if (result.rowCount === 0) throw new AppError('FIR not found', 404, 'NOT_FOUND')
+  if (result.rowCount === 0) {
+    // Fallback to public data
+    const pubFIR = getPublicFIRById(req.params.id)
+    if (pubFIR) return res.json({ success: true, data: pubFIR })
+    throw new AppError('FIR not found', 404, 'NOT_FOUND')
+  }
   res.json({ success: true, data: result.rows[0] })
 })
 

@@ -5,6 +5,7 @@ const auth_middleware_1 = require("../middleware/auth.middleware");
 const rateLimit_middleware_1 = require("../middleware/rateLimit.middleware");
 const database_service_1 = require("../services/database.service");
 const error_middleware_1 = require("../middleware/error.middleware");
+const publicSeedData_service_1 = require("../services/publicSeedData.service");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate, rateLimit_middleware_1.rateLimitGeneral);
 // ─── POST /reports ─────────────────────────────────────────────────────────────
@@ -27,13 +28,22 @@ router.get('/', async (req, res) => {
      FROM reports r LEFT JOIN users u ON u.id = r.generated_by
      WHERE r.generated_by = $1 OR $2 = 'administrator'
      ORDER BY r.created_at DESC LIMIT 50`, [req.user.userId, req.user.role]);
+    // Fallback to public data when DB is empty
+    if (result.rowCount === 0) {
+        return res.json({ success: true, data: (0, publicSeedData_service_1.getPublicReports)() });
+    }
     res.json({ success: true, data: result.rows });
 });
 // ─── GET /reports/:id ──────────────────────────────────────────────────────────
 router.get('/:id', async (req, res) => {
     const result = await (0, database_service_1.query)('SELECT * FROM reports WHERE id = $1', [req.params.id]);
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
+        // Fallback to public data
+        const pubReport = (0, publicSeedData_service_1.getPublicReportById)(req.params.id);
+        if (pubReport)
+            return res.json({ success: true, data: pubReport });
         throw new error_middleware_1.AppError('Report not found', 404, 'NOT_FOUND');
+    }
     res.json({ success: true, data: result.rows[0] });
 });
 // ─── DELETE /reports/:id ───────────────────────────────────────────────────────

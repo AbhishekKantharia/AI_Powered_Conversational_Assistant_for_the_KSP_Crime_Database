@@ -9,6 +9,7 @@ const validation_middleware_1 = require("../middleware/validation.middleware");
 const database_service_1 = require("../services/database.service");
 const error_middleware_1 = require("../middleware/error.middleware");
 const audit_middleware_1 = require("../middleware/audit.middleware");
+const publicSeedData_service_1 = require("../services/publicSeedData.service");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate, rateLimit_middleware_1.rateLimitGeneral);
 // ─── Schemas ─────────────────────────────────────────────────────────────────
@@ -104,6 +105,11 @@ router.get('/', (0, rbac_middleware_1.requirePermission)('fir:read'), (0, valida
         (0, database_service_1.query)(`SELECT COUNT(*) FROM fir f ${whereClause}`, params),
     ]);
     const total = parseInt(count.rows[0].count);
+    // Fallback to public data when DB is empty
+    if (total === 0) {
+        const pubResult = await (0, publicSeedData_service_1.getPublicFIRs)({ search, crimeCategory, status, page, limit });
+        return res.json({ success: true, ...pubResult });
+    }
     res.json({ success: true, ...(0, database_service_1.buildPaginatedResponse)(rows.rows, total, page, limit) });
 });
 // ─── GET /fir/:id ─────────────────────────────────────────────────────────────
@@ -117,8 +123,13 @@ router.get('/:id', (0, rbac_middleware_1.requirePermission)('fir:read'), (0, val
      LEFT JOIN users u1 ON u1.id = f.registered_by
      LEFT JOIN users u2 ON u2.id = f.investigation_officer_id
      WHERE f.id = $1`, [req.params.id]);
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
+        // Fallback to public data
+        const pubFIR = (0, publicSeedData_service_1.getPublicFIRById)(req.params.id);
+        if (pubFIR)
+            return res.json({ success: true, data: pubFIR });
         throw new error_middleware_1.AppError('FIR not found', 404, 'NOT_FOUND');
+    }
     res.json({ success: true, data: result.rows[0] });
 });
 // ─── POST /fir ────────────────────────────────────────────────────────────────

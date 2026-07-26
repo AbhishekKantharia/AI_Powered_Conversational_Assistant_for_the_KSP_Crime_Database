@@ -7,6 +7,7 @@ import { validate, PaginationSchema, UUIDSchema } from '../middleware/validation
 import { query, buildPagination, buildPaginatedResponse } from '../services/database.service'
 import { AppError } from '../middleware/error.middleware'
 import { writeAuditLog } from '../middleware/audit.middleware'
+import { isTableEmpty, getPublicCriminals, getPublicCriminalById, getPublicWantedCriminals } from '../services/publicSeedData.service'
 
 const router = Router()
 router.use(authenticate, rateLimitGeneral)
@@ -84,6 +85,13 @@ router.get('/', requirePermission('criminals:read'), validate(CriminalFilterSche
   ])
 
   const total = parseInt((count.rows[0] as { count: string }).count)
+
+  // Fallback to public data when DB is empty
+  if (total === 0) {
+    const pubResult = await getPublicCriminals({ search, riskLevel, isWanted, gender, page, limit })
+    return res.json({ success: true, ...pubResult })
+  }
+
   res.json({ success: true, ...buildPaginatedResponse(rows.rows, total, page, limit) })
 })
 
@@ -108,7 +116,12 @@ router.get('/:id', requirePermission('criminals:read'), validate(UUIDSchema, 'pa
     ),
   ])
 
-  if (criminal.rowCount === 0) throw new AppError('Criminal not found', 404, 'NOT_FOUND')
+  if (criminal.rowCount === 0) {
+    // Fallback to public data
+    const pubCriminal = getPublicCriminalById(req.params.id)
+    if (pubCriminal) return res.json({ success: true, data: pubCriminal })
+    throw new AppError('Criminal not found', 404, 'NOT_FOUND')
+  }
 
   res.json({ success: true, data: { ...criminal.rows[0], cases: cases.rows } })
 })
@@ -205,6 +218,10 @@ router.put('/:id', requirePermission('criminals:update'), validate(UUIDSchema, '
 // ─── GET /criminals/wanted ────────────────────────────────────────────────────
 router.get('/wanted', requirePermission('criminals:read'), async (_req, res) => {
   const result = await query(`SELECT * FROM v_wanted_criminals LIMIT 50`)
+  // Fallback to public data when DB is empty
+  if (result.rowCount === 0) {
+    return res.json({ success: true, data: getPublicWantedCriminals() })
+  }
   res.json({ success: true, data: result.rows })
 })
 

@@ -4,6 +4,7 @@ import { rateLimitGeneral } from '../middleware/rateLimit.middleware'
 import { query } from '../services/database.service'
 import { AppError } from '../middleware/error.middleware'
 import { aiService } from '../services/ai.service'
+import { getPublicReports, getPublicReportById } from '../services/publicSeedData.service'
 
 const router = Router()
 router.use(authenticate, rateLimitGeneral)
@@ -37,13 +38,22 @@ router.get('/', async (req, res) => {
      ORDER BY r.created_at DESC LIMIT 50`,
     [req.user!.userId, req.user!.role]
   )
+  // Fallback to public data when DB is empty
+  if (result.rowCount === 0) {
+    return res.json({ success: true, data: getPublicReports() })
+  }
   res.json({ success: true, data: result.rows })
 })
 
 // ─── GET /reports/:id ──────────────────────────────────────────────────────────
 router.get('/:id', async (req, res) => {
   const result = await query('SELECT * FROM reports WHERE id = $1', [req.params.id])
-  if (result.rowCount === 0) throw new AppError('Report not found', 404, 'NOT_FOUND')
+  if (result.rowCount === 0) {
+    // Fallback to public data
+    const pubReport = getPublicReportById(req.params.id)
+    if (pubReport) return res.json({ success: true, data: pubReport })
+    throw new AppError('Report not found', 404, 'NOT_FOUND')
+  }
   res.json({ success: true, data: result.rows[0] })
 })
 

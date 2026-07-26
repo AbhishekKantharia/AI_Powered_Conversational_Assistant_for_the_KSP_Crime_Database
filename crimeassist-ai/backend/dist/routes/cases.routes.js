@@ -10,6 +10,7 @@ const database_service_1 = require("../services/database.service");
 const error_middleware_1 = require("../middleware/error.middleware");
 const audit_middleware_1 = require("../middleware/audit.middleware");
 const ai_service_1 = require("../services/ai.service");
+const publicSeedData_service_1 = require("../services/publicSeedData.service");
 const router = (0, express_1.Router)();
 // Apply auth to all case routes
 router.use(auth_middleware_1.authenticate, rateLimit_middleware_1.rateLimitGeneral);
@@ -120,6 +121,11 @@ router.get('/', (0, rbac_middleware_1.requirePermission)('cases:read'), (0, vali
         (0, database_service_1.query)(`SELECT COUNT(*) FROM cases c ${whereClause}`, params),
     ]);
     const total = parseInt(countResult.rows[0].count);
+    // Fallback to public data when DB is empty
+    if (total === 0) {
+        const pubResult = await (0, publicSeedData_service_1.getPublicCases)({ search, status, crimeCategory, page, limit });
+        return res.json({ success: true, ...pubResult });
+    }
     res.json({
         success: true,
         ...(0, database_service_1.buildPaginatedResponse)(dataResult.rows, total, page, limit),
@@ -151,8 +157,13 @@ router.get('/:id', (0, rbac_middleware_1.requirePermission)('cases:read'), (0, v
            LEFT JOIN users u ON u.id = cn.author_id
            WHERE cn.case_id = $1 ORDER BY cn.created_at DESC`, [id]),
     ]);
-    if (caseResult.rowCount === 0)
+    if (caseResult.rowCount === 0) {
+        // Fallback to public data
+        const pubCase = (0, publicSeedData_service_1.getPublicCaseById)(id);
+        if (pubCase)
+            return res.json({ success: true, data: pubCase });
         throw new error_middleware_1.AppError('Case not found', 404, 'NOT_FOUND');
+    }
     res.json({
         success: true,
         data: {

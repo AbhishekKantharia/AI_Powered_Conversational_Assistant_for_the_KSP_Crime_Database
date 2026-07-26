@@ -9,6 +9,7 @@ const validation_middleware_1 = require("../middleware/validation.middleware");
 const database_service_1 = require("../services/database.service");
 const error_middleware_1 = require("../middleware/error.middleware");
 const audit_middleware_1 = require("../middleware/audit.middleware");
+const publicSeedData_service_1 = require("../services/publicSeedData.service");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate, rateLimit_middleware_1.rateLimitGeneral);
 // ─── Schemas ─────────────────────────────────────────────────────────────────
@@ -89,6 +90,11 @@ router.get('/', (0, rbac_middleware_1.requirePermission)('criminals:read'), (0, 
         (0, database_service_1.query)(`SELECT COUNT(*) FROM criminals cr ${whereClause}`, params),
     ]);
     const total = parseInt(count.rows[0].count);
+    // Fallback to public data when DB is empty
+    if (total === 0) {
+        const pubResult = await (0, publicSeedData_service_1.getPublicCriminals)({ search, riskLevel, isWanted, gender, page, limit });
+        return res.json({ success: true, ...pubResult });
+    }
     res.json({ success: true, ...(0, database_service_1.buildPaginatedResponse)(rows.rows, total, page, limit) });
 });
 // ─── GET /criminals/:id ──────────────────────────────────────────────────────
@@ -105,8 +111,13 @@ router.get('/:id', (0, rbac_middleware_1.requirePermission)('criminals:read'), (
        WHERE s.criminal_id = $1
        ORDER BY c.case_registered_date DESC`, [req.params.id]),
     ]);
-    if (criminal.rowCount === 0)
+    if (criminal.rowCount === 0) {
+        // Fallback to public data
+        const pubCriminal = (0, publicSeedData_service_1.getPublicCriminalById)(req.params.id);
+        if (pubCriminal)
+            return res.json({ success: true, data: pubCriminal });
         throw new error_middleware_1.AppError('Criminal not found', 404, 'NOT_FOUND');
+    }
     res.json({ success: true, data: { ...criminal.rows[0], cases: cases.rows } });
 });
 // ─── POST /criminals ─────────────────────────────────────────────────────────
@@ -177,6 +188,10 @@ router.put('/:id', (0, rbac_middleware_1.requirePermission)('criminals:update'),
 // ─── GET /criminals/wanted ────────────────────────────────────────────────────
 router.get('/wanted', (0, rbac_middleware_1.requirePermission)('criminals:read'), async (_req, res) => {
     const result = await (0, database_service_1.query)(`SELECT * FROM v_wanted_criminals LIMIT 50`);
+    // Fallback to public data when DB is empty
+    if (result.rowCount === 0) {
+        return res.json({ success: true, data: (0, publicSeedData_service_1.getPublicWantedCriminals)() });
+    }
     res.json({ success: true, data: result.rows });
 });
 // ─── DELETE /criminals/:id ────────────────────────────────────────────────────
