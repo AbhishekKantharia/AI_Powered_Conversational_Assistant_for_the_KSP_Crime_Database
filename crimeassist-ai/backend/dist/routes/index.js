@@ -15,6 +15,7 @@ const reports_routes_1 = __importDefault(require("./reports.routes"));
 const users_routes_1 = __importDefault(require("./users.routes"));
 const settings_routes_1 = __importDefault(require("./settings.routes"));
 const evidence_routes_1 = __importDefault(require("./evidence.routes"));
+const public_data_routes_1 = __importDefault(require("./public-data.routes"));
 function setupRoutes(app) {
     (0, rateLimit_middleware_1.setupRateLimiters)();
     const API_PREFIX = '/api/v1';
@@ -28,6 +29,7 @@ function setupRoutes(app) {
     app.use(`${API_PREFIX}/users`, users_routes_1.default);
     app.use(`${API_PREFIX}/settings`, settings_routes_1.default);
     app.use(`${API_PREFIX}/evidence`, evidence_routes_1.default);
+    app.use(`${API_PREFIX}/public-data`, public_data_routes_1.default);
     // Also support /api prefix (no version)
     app.use('/api/auth', auth_routes_1.default);
     app.use('/api/cases', cases_routes_1.default);
@@ -39,5 +41,6 @@ function setupRoutes(app) {
     app.use('/api/users', users_routes_1.default);
     app.use('/api/settings', settings_routes_1.default);
     app.use('/api/evidence', evidence_routes_1.default);
+    app.use('/api/public-data', public_data_routes_1.default);
 }
 //# sourceMappingURL=index.js.map

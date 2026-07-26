@@ -6,6 +6,7 @@ const rbac_middleware_1 = require("../middleware/rbac.middleware");
 const rateLimit_middleware_1 = require("../middleware/rateLimit.middleware");
 const validation_middleware_1 = require("../middleware/validation.middleware");
 const database_service_1 = require("../services/database.service");
+const publicData_service_1 = require("../services/publicData.service");
 const zod_1 = require("zod");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate, rateLimit_middleware_1.rateLimitGeneral);
@@ -16,7 +17,7 @@ const AnalyticsQuerySchema = zod_1.z.object({
 });
 // ─── GET /analytics/dashboard ─────────────────────────────────────────────────
 router.get('/dashboard', (0, rbac_middleware_1.requirePermission)('analytics:read'), async (req, res) => {
-    const [stats, recentCases, topDistricts, crimeByCategory, monthlyTrend] = await Promise.all([
+    const [stats, recentCases, topDistricts, crimeByCategory, monthlyTrend, ncrbData] = await Promise.all([
         // Dashboard stats
         (0, database_service_1.query)(`SELECT * FROM v_dashboard_stats LIMIT 1`),
         // Recent cases (last 10)
@@ -51,15 +52,32 @@ router.get('/dashboard', (0, rbac_middleware_1.requirePermission)('analytics:rea
        WHERE incident_date >= NOW() - INTERVAL '12 months'
        GROUP BY DATE_TRUNC('month', incident_date)
        ORDER BY month_date ASC`),
+        // NCRB public data for Karnataka (background enrichment)
+        (0, publicData_service_1.fetchKarnatakaCrimeStats)().catch(() => []),
     ]);
+    // Merge NCRB reference data into topDistricts if database has sparse data
+    const dbDistricts = topDistricts.rows;
+    let enrichedTopDistricts = dbDistricts;
+    if (Array.isArray(ncrbData) && ncrbData.length > 0 && dbDistricts.length < 5) {
+        const ncrbDistricts = ncrbData
+            .sort((a, b) => b.totalCrime - a.totalCrime)
+            .slice(0, 10)
+            .map((d) => ({ district: d.district, crime_count: d.totalCrime, source: 'NCRB' }));
+        enrichedTopDistricts = [...dbDistricts, ...ncrbDistricts].slice(0, 10);
+    }
     res.json({
         success: true,
         data: {
             stats: stats.rows[0] || {},
             recentCases: recentCases.rows,
-            topDistricts: topDistricts.rows,
+            topDistricts: enrichedTopDistricts,
             crimeByCategory: crimeByCategory.rows,
             monthlyTrend: monthlyTrend.rows,
+            ncrbSummary: Array.isArray(ncrbData) && ncrbData.length > 0 ? {
+                totalCrime: ncrbData.reduce((sum, d) => sum + d.totalCrime, 0),
+                districts: ncrbData.length,
+                source: 'NCRB Crime in India',
+            } : null,
         },
     });
 });
