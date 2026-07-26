@@ -1,4 +1,4 @@
-export declare function generateEmbedding(text: string): Promise<number[]>;
+export declare function generateEmbedding(_text: string): Promise<number[]>;
 export declare function indexDocument(sourceType: string, sourceId: string, text: string, metadata?: Record<string, unknown>): Promise<void>;
 export interface ChatMessage {
     role: 'user' | 'assistant' | 'system';
