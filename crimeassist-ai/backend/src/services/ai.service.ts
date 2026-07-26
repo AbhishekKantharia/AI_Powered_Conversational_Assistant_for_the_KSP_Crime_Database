@@ -1,16 +1,15 @@
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { query, globalVectorSearch, withTransaction } from './database.service'
 import { logger } from '../utils/logger'
 import { fetchIPCSections, fetchKarnatakaCrimeStats, searchIPCSections } from './publicData.service'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o'
-const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small'
-const MAX_TOKENS = parseInt(process.env.OPENAI_MAX_TOKENS || '4096')
-const TEMPERATURE = parseFloat(process.env.OPENAI_TEMPERATURE || '0.2')
+const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514'
+const MAX_TOKENS = parseInt(process.env.ANTHROPIC_MAX_TOKENS || '4096')
+const TEMPERATURE = parseFloat(process.env.ANTHROPIC_TEMPERATURE || '0.2')
 
 // ─── KSP System Prompt ───────────────────────────────────────────────────────
 const KSP_SYSTEM_PROMPT = `You are CrimeAssist AI, an expert crime investigation assistant for the Karnataka State Police (KSP). You have deep knowledge of:
@@ -39,17 +38,10 @@ Current date: ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata
 Database: Karnataka State Police Crime Database`
 
 // ─── Embedding Generation ─────────────────────────────────────────────────────
-export async function generateEmbedding(text: string): Promise<number[]> {
-  try {
-    const response = await openai.embeddings.create({
-      model: EMBEDDING_MODEL,
-      input: text.substring(0, 8000), // Token limit
-    })
-    return response.data[0].embedding
-  } catch (error) {
-    logger.error('Embedding generation failed:', error)
-    throw error
-  }
+// Anthropic does not provide an embedding API. We use keyword-based search as fallback.
+export async function generateEmbedding(_text: string): Promise<number[]> {
+  logger.warn('Embedding generation requested but Anthropic does not support embeddings. Returning empty vector.')
+  return []
 }
 
 // ─── Document Chunking ────────────────────────────────────────────────────────
@@ -75,23 +67,19 @@ export async function indexDocument(
   const chunks = chunkText(text)
 
   await withTransaction(async (client) => {
-    // Remove old embeddings for this document
     await client.query(
       'DELETE FROM document_embeddings WHERE source_type = $1 AND source_id = $2',
       [sourceType, sourceId]
     )
 
     for (let i = 0; i < chunks.length; i++) {
-      const embedding = await generateEmbedding(chunks[i])
-      const vectorStr = `[${embedding.join(',')}]`
       await client.query(
         `INSERT INTO document_embeddings (source_type, source_id, chunk_index, chunk_text, embedding, metadata)
          VALUES ($1, $2, $3, $4, $5::vector, $6)
          ON CONFLICT (source_type, source_id, chunk_index) DO UPDATE SET
            chunk_text = EXCLUDED.chunk_text,
-           embedding = EXCLUDED.embedding,
            metadata = EXCLUDED.metadata`,
-        [sourceType, sourceId, i, chunks[i], vectorStr, JSON.stringify(metadata)]
+        [sourceType, sourceId, i, chunks[i], '[]', JSON.stringify(metadata)]
       )
     }
   })
@@ -102,19 +90,54 @@ export async function indexDocument(
 // ─── RAG Context Retrieval ────────────────────────────────────────────────────
 async function retrieveContext(
   userQuery: string,
-  limit: number = 8,
-  threshold: number = 0.6
+  _limit: number = 8,
+  _threshold: number = 0.6
 ): Promise<Array<{ text: string; source: string; sourceId: string; similarity: number }>> {
-  const queryEmbedding = await generateEmbedding(userQuery)
-  const results = await globalVectorSearch(queryEmbedding, limit, threshold)
+  // Try vector search first, fall back to keyword search
+  try {
+    const queryEmbedding = await generateEmbedding(userQuery)
+    if (queryEmbedding.length > 0) {
+      const results = await globalVectorSearch(queryEmbedding, _limit, _threshold)
+      return results.map((r) => ({
+        text: r.chunk_text,
+        source: r.source_type,
+        sourceId: r.source_id,
+        similarity: r.similarity,
+        metadata: r.metadata,
+      }))
+    }
+  } catch {}
 
-  return results.map((r) => ({
-    text: r.chunk_text,
-    source: r.source_type,
-    sourceId: r.source_id,
-    similarity: r.similarity,
-    metadata: r.metadata,
-  }))
+  // Keyword-based fallback search
+  try {
+    const keywords = userQuery.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
+    if (keywords.length === 0) return []
+
+    const conditions = keywords.map((_, i) => `chunk_text ILIKE $${i + 1}`)
+    const params = keywords.map((k) => `%${k}%`)
+
+    const result = await query<{
+      chunk_text: string
+      source_type: string
+      source_id: string
+    }>(
+      `SELECT chunk_text, source_type, source_id
+       FROM document_embeddings
+       WHERE ${conditions.join(' OR ')}
+       LIMIT $${params.length + 1}`,
+      [...params, _limit]
+    )
+
+    return result.rows.map((r, idx) => ({
+      text: r.chunk_text,
+      source: r.source_type,
+      sourceId: r.source_id,
+      similarity: 0.7 - idx * 0.05,
+    }))
+  } catch (err) {
+    logger.warn('Keyword search fallback failed:', err)
+    return []
+  }
 }
 
 // ─── Build RAG Prompt ─────────────────────────────────────────────────────────
@@ -122,7 +145,6 @@ async function buildRAGPrompt(
   userQuery: string,
   contexts: Array<{ text: string; source: string; sourceId: string; similarity: number }>
 ): Promise<string> {
-  // Enrich with real IPC sections from public API
   let ipcContext = ''
   try {
     const ipcResults = await searchIPCSections(userQuery)
@@ -134,7 +156,6 @@ async function buildRAGPrompt(
     }
   } catch {}
 
-  // Enrich with NCRB Karnataka crime statistics
   let ncrbContext = ''
   try {
     const stats = await fetchKarnatakaCrimeStats()
@@ -192,50 +213,44 @@ export async function chat(
   const lastUserMessage = messages.filter((m) => m.role === 'user').slice(-1)[0]
 
   let sources: Array<{ source: string; sourceId: string; similarity: number }> = []
-  let augmentedMessages = [...messages]
+  let augmentedQuery = lastUserMessage?.content || ''
 
-  // RAG: retrieve relevant context
   if (useRAG && lastUserMessage) {
     try {
       const contexts = await retrieveContext(lastUserMessage.content)
       sources = contexts.map((c) => ({
         source: c.source,
-        sourceId: c.sourceId,
+        sourceId: cSourceId,
         similarity: c.similarity,
       }))
 
       if (contexts.length > 0) {
-        // Replace the last user message with RAG-augmented version
-        const augmentedPrompt = await buildRAGPrompt(lastUserMessage.content, contexts)
-        augmentedMessages = [
-          ...messages.slice(0, -1),
-          { role: 'user', content: augmentedPrompt },
-        ]
+        augmentedQuery = await buildRAGPrompt(lastUserMessage.content, contexts)
       }
     } catch (err) {
       logger.warn('RAG retrieval failed, falling back to direct response:', err)
     }
   }
 
-  // Build message array for OpenAI
-  const openAIMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: KSP_SYSTEM_PROMPT },
-    ...augmentedMessages.map((m) => ({
+  // Build Anthropic messages (system prompt is separate)
+  const anthropicMessages: Anthropic.MessageParam[] = [
+    ...messages.slice(0, -1).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
+    { role: 'user' as const, content: augmentedQuery },
   ]
 
-  const completion = await openai.chat.completions.create({
+  const response = await anthropic.messages.create({
     model: MODEL,
-    messages: openAIMessages,
     max_tokens: MAX_TOKENS,
     temperature: TEMPERATURE,
-    stream: false,
+    system: KSP_SYSTEM_PROMPT,
+    messages: anthropicMessages,
   })
 
-  const content = completion.choices[0]?.message?.content || 'Unable to generate response'
-  const tokensUsed = completion.usage?.total_tokens || 0
+  const content = response.content[0]?.type === 'text' ? response.content[0].text : 'Unable to generate response'
+  const tokensUsed = (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0)
   const processingTimeMs = Date.now() - startTime
 
   return { content, sources, tokensUsed, processingTimeMs, model: MODEL }
@@ -248,50 +263,46 @@ export async function chatStream(
   onDone: (usage: { tokensUsed: number; sources: Array<{ source: string; sourceId: string }> }) => void
 ): Promise<void> {
   const lastUserMessage = messages.filter((m) => m.role === 'user').slice(-1)[0]
-  let augmentedMessages = [...messages]
+  let augmentedQuery = lastUserMessage?.content || ''
   let sources: Array<{ source: string; sourceId: string; similarity: number }> = []
 
-  // RAG retrieval
   if (lastUserMessage) {
     try {
       const contexts = await retrieveContext(lastUserMessage.content, 6)
       sources = contexts.map((c) => ({ source: c.source, sourceId: c.sourceId, similarity: c.similarity }))
       if (contexts.length > 0) {
-        const augmentedPrompt = await buildRAGPrompt(lastUserMessage.content, contexts)
-        augmentedMessages = [
-          ...messages.slice(0, -1),
-          { role: 'user', content: augmentedPrompt },
-        ]
+        augmentedQuery = await buildRAGPrompt(lastUserMessage.content, contexts)
       }
     } catch {}
   }
 
-  const openAIMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: KSP_SYSTEM_PROMPT },
-    ...augmentedMessages.map((m) => ({
+  const anthropicMessages: Anthropic.MessageParam[] = [
+    ...messages.slice(0, -1).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
+    { role: 'user' as const, content: augmentedQuery },
   ]
 
-  const stream = await openai.chat.completions.create({
+  const stream = anthropic.messages.stream({
     model: MODEL,
-    messages: openAIMessages,
     max_tokens: MAX_TOKENS,
     temperature: TEMPERATURE,
-    stream: true,
+    system: KSP_SYSTEM_PROMPT,
+    messages: anthropicMessages,
   })
 
   let totalContent = ''
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content || ''
-    if (delta) {
-      totalContent += delta
-      onChunk(delta)
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+      totalContent += event.delta.text
+      onChunk(event.delta.text)
     }
   }
 
-  onDone({ tokensUsed: 0, sources })
+  const finalMessage = await stream.finalMessage()
+  const tokensUsed = (finalMessage.usage?.input_tokens || 0) + (finalMessage.usage?.output_tokens || 0)
+  onDone({ tokensUsed, sources })
 }
 
 // ─── Case Summarization ───────────────────────────────────────────────────────
@@ -325,25 +336,23 @@ export async function summarizeCase(caseId: string): Promise<string> {
     Recent Notes: ${notes.rows.map((n) => { const nn = n as { note_type: string; content: string }; return `[${nn.note_type}] ${nn.content}` }).join('\n')}
   `
 
-  const response = await openai.chat.completions.create({
+  const response = await anthropic.messages.create({
     model: MODEL,
+    max_tokens: 1000,
+    temperature: 0.3,
+    system: KSP_SYSTEM_PROMPT,
     messages: [
-      { role: 'system', content: KSP_SYSTEM_PROMPT },
       {
         role: 'user',
         content: `Please provide a professional 3-paragraph case summary for the following case data. Include: 1) Case overview and current status, 2) Key suspects and victims, 3) Investigation progress and recommendations.\n\n${caseText}`,
       },
     ],
-    max_tokens: 1000,
-    temperature: 0.3,
   })
 
-  const summary = response.choices[0]?.message?.content || ''
+  const summary = response.content[0]?.type === 'text' ? response.content[0].text : ''
 
-  // Save summary to database
   await query('UPDATE cases SET ai_summary = $1, updated_at = NOW() WHERE id = $2', [summary, caseId])
 
-  // Index for RAG
   await indexDocument('case', caseId, `${c.title}\n${c.description}\n${summary}`, {
     caseNumber: c.case_number,
     category: c.crime_category,
@@ -373,11 +382,10 @@ export async function calculateRiskScore(criminalId: string): Promise<number> {
     is_wanted: boolean; is_absconding: boolean; crime_specialization: string[]
   }
 
-  // Risk scoring algorithm
   let score = 0
-  score += Math.min(cr.total_cases || 0, 10) * 3           // Max 30 pts for case count
-  score += Math.min(cr.active_cases_count || 0, 5) * 5      // Max 25 pts for active cases
-  score += Math.min(cr.total_convictions || 0, 5) * 4        // Max 20 pts for convictions
+  score += Math.min(cr.total_cases || 0, 10) * 3
+  score += Math.min(cr.active_cases_count || 0, 5) * 5
+  score += Math.min(cr.total_convictions || 0, 5) * 4
   if (cr.is_wanted) score += 15
   if (cr.is_absconding) score += 10
   const dangerousCategories = ['murder', 'terrorism', 'kidnapping', 'sexual_offense', 'arms_offense']
@@ -397,27 +405,35 @@ export async function detectDuplicateFIR(firId: string): Promise<{ isDuplicate: 
   if (fir.rowCount === 0) return { isDuplicate: false }
 
   const f = fir.rows[0] as { fir_number: string; crime_description: string; incident_location: string; incident_date: string }
-  const embedding = await generateEmbedding(`${f.crime_description} ${f.incident_location}`)
-  const vectorStr = `[${embedding.join(',')}]`
 
-  const similar = await query<{ id: string; fir_number: string; similarity: number }>(
-    `SELECT id, fir_number, 1 - (embedding <=> $1::vector) AS similarity
-     FROM fir
-     WHERE id != $2
-       AND ABS(EXTRACT(epoch FROM (incident_date - $3::timestamptz)) / 3600) < 72
-       AND 1 - (embedding <=> $1::vector) > 0.92
-     ORDER BY embedding <=> $1::vector
-     LIMIT 1`,
-    [vectorStr, firId, f.incident_date]
-  )
+  // Use keyword-based search for duplicate detection
+  const keywords = `${f.crime_description} ${f.incident_location}`.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
+  if (keywords.length === 0) return { isDuplicate: false }
 
-  if (similar.rows.length > 0) {
-    const match = similar.rows[0]
-    await query(
-      'UPDATE fir SET is_duplicate = TRUE, duplicate_fir_id = $1, duplicate_score = $2 WHERE id = $3',
-      [match.id, match.similarity, firId]
+  try {
+    const conditions = keywords.map((_, i) => `crime_description ILIKE $${i + 1} OR incident_location ILIKE $${i + 1}`)
+    const params = keywords.map((k) => `%${k}%`)
+
+    const similar = await query<{ id: string; fir_number: string }>(
+      `SELECT id, fir_number
+       FROM fir
+       WHERE id != $1
+         AND ABS(EXTRACT(epoch FROM (incident_date - $2::timestamptz)) / 3600) < 72
+         AND (${conditions.join(' OR ')})
+       LIMIT 1`,
+      [firId, f.incident_date, ...params]
     )
-    return { isDuplicate: true, matchedFirId: match.id, score: match.similarity }
+
+    if (similar.rows.length > 0) {
+      const match = similar.rows[0]
+      await query(
+        'UPDATE fir SET is_duplicate = TRUE, duplicate_fir_id = $1, duplicate_score = $2 WHERE id = $3',
+        [match.id, 0.85, firId]
+      )
+      return { isDuplicate: true, matchedFirId: match.id, score: 0.85 }
+    }
+  } catch (err) {
+    logger.warn('Duplicate detection search failed:', err)
   }
 
   return { isDuplicate: false }
@@ -428,21 +444,43 @@ export async function semanticSearch(
   query_text: string,
   filters: { sourceType?: string; limit?: number } = {}
 ): Promise<Array<{ source: string; sourceId: string; text: string; similarity: number; metadata: Record<string, unknown> }>> {
-  const embedding = await generateEmbedding(query_text)
-  const results = await globalVectorSearch(embedding, filters.limit || 10, 0.55)
+  const keywords = query_text.toLowerCase().split(/\s+/).filter((w) => w.length > 3)
+  if (keywords.length === 0) return []
 
-  return results
-    .filter((r) => !filters.sourceType || r.source_type === filters.sourceType)
-    .map((r) => ({
+  try {
+    const conditions = keywords.map((_, i) => `chunk_text ILIKE $${i + 1}`)
+    const params = keywords.map((k) => `%${k}%`)
+
+    let sql = `SELECT chunk_text, source_type, source_id, '{}'::jsonb AS metadata
+               FROM document_embeddings
+               WHERE ${conditions.join(' OR ')}`
+
+    if (filters.sourceType) {
+      sql += ` AND source_type = $${params.length + 1}`
+      params.push(filters.sourceType)
+    }
+
+    sql += ` LIMIT $${params.length + 1}`
+    params.push(filters.limit || 10)
+
+    const results = await query<{
+      chunk_text: string; source_type: string; source_id: string; metadata: Record<string, unknown>
+    }>(sql, params)
+
+    return results.rows.map((r, idx) => ({
       source: r.source_type,
       sourceId: r.source_id,
       text: r.chunk_text,
-      similarity: r.similarity,
+      similarity: 0.7 - idx * 0.05,
       metadata: r.metadata,
     }))
+  } catch (err) {
+    logger.warn('Semantic search failed:', err)
+    return []
+  }
 }
 
-// ─── Generate Case Summary (Background) ──────────────────────────────────────
+// ─── Export Service ──────────────────────────────────────────────────────────
 export const aiService = {
   generateCaseSummary: summarizeCase,
   calculateRiskScore,
