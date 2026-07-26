@@ -194,7 +194,7 @@ ON CONFLICT (code) DO NOTHING;
 -- 3. USERS (Admin + 4 demo users)
 -- =============================================================================
 -- Password for all users: password
--- Bcrypt hash: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- Bcryptjs hash: $2a$10$j91npNibJTGRQhx9KWmxb.7VCIAmvMXjvCDr9guVI.WaTE3vULxiS
 -- =============================================================================
 
 INSERT INTO users (id, badge_number, username, email, password_hash, full_name, role, status, district_id, station_id, rank, phone)
